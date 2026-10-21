@@ -1,0 +1,12 @@
+# downloaded inputs and generated outputs (examples/run_examples.sh, paper_figures/get_inputs.sh)
+examples/figures/
+examples/inputs/
+paper_figures/inputs/
+figures/
+# paper_figures/panels: keep only the final panel images
+paper_figures/panels/**/*.*
+!paper_figures/panels/**/*.png
+paper_figures/panels/**/*_nolabels.png
+__pycache__/
+*.pyc
+.DS_Store

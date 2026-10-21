@@ -1,0 +1,150 @@
+# Panels of the PROTFIG manuscript. To regenerate them exactly (outputs go to panels/):
+#   ./get_inputs.sh && ../protfig --config figures.toml --jobs 8
+# Each [[figure]] is one panel; the keys are the protfig options without "--".
+
+[defaults]
+out = "panels"
+
+# ---------------------------------------------------------------- Figure 1: one input, six styles
+# GLP-1R with orforglipron (LY3502970; PDB 6XOX), receptor only (chain R)
+[[figure]]
+input = "inputs/6XOX.cif"
+preset = "site"
+name = "F1_site"
+chains = "R"
+
+[[figure]]
+input = "inputs/6XOX.cif"
+preset = "pocket"
+name = "F1_pocket"
+chains = "R"
+
+[[figure]]
+input = "inputs/6XOX.cif"
+preset = "site_faded"
+name = "F1_site_faded"
+chains = "R"
+
+[[figure]]
+input = "inputs/6XOX.cif"
+preset = "electrostatic"
+name = "F1_electrostatic"
+chains = "R"
+labels = "off"
+
+[[figure]]
+input = "inputs/6XOX.cif"
+preset = "outline"
+name = "F1_outline"
+chains = "R"
+highlight = "resi 1-140"
+
+[[figure]]
+input = "inputs/6XOX.cif"
+preset = "illustrative"
+name = "F1_illustrative"
+width = 3000
+height = 3000
+chains = "R"
+
+# ---------------------------------------------------------------- Figure 2: incretins
+# (a) GLP-1R–Gs–orforglipron in a DPPC bilayer (MemProtMD + 6XOX, tools/embed_in_membrane.py)
+[[figure]]
+input = "inputs/6XOX_in_membrane.pdb"
+preset = "membrane"
+name = "F2a_membrane"
+width = 3600
+height = 2000
+partner = "chain A+B+G+N"
+
+# (b) retatrutide (triple agonist) in the GLP-1R–Gs complex (8YW3)
+[[figure]]
+input = "inputs/8YW3.cif"
+preset = "overview"
+name = "F2b_overview"
+chains = "R,P,A,B,G,N"
+chain_names = "R:GLP-1R,P:Retatrutide,A:Gαs,B:Gβ1"
+
+# (c, d) semaglutide on GLP-1R (7KI0): footprint on the surface and interface
+[[figure]]
+input = "inputs/7KI0.cif"
+preset = "binding_surface"
+name = "F2c_binding_surface"
+width = 3200
+height = 2700
+chains = "R,P"
+partner = "chain P"
+pocket_cutoff = 5
+show_partner = "on"
+
+[[figure]]
+input = "inputs/7KI0.cif"
+preset = "interface_closeup"
+name = "F2d_interface"
+chains = "R,P"
+partner = "chain P"
+
+# ---------------------------------------------------------------- Figure 3: targeted degradation
+# (a, b) 14-3-3-directed glue-PROTAC that ubiquitinates ERα (9SV3)
+[[figure]]
+input = "inputs/9SV3.cif"
+preset = "overview"
+name = "F3a_overview"
+chains = "D,I,E,B,C,G,H"
+chain_names = "D:14-3-3ζ,E:VHL,B:EloC,C:EloB,G:ERα"
+
+[[figure]]
+input = "inputs/9SV3.cif"
+preset = "site"
+name = "F3b_site"
+chains = "D,E"
+label_size = 0.85
+
+# (c, d) PRT3789, SMARCA2 degrader in a ternary complex with VHL (9DTY, copy 1)
+[[figure]]
+input = "inputs/9DTY.cif"
+preset = "site"
+name = "F3c_site"
+chains = "A,B,C,D"
+palette = "chimerax"
+label_size = 0.85
+
+[[figure]]
+input = "inputs/9DTY.cif"
+preset = "pocket"
+name = "F3d_pocket"
+chains = "A,B"
+palette = "chimerax"
+
+# ---------------------------------------------------------------- Figure 4: H5N1 clade 2.3.4.4b
+# (a, b) HA from A/Texas/37/2024 with the H91 Fab (9ZTJ)
+[[figure]]
+input = "inputs/9ZTJ.cif"
+preset = "overview"
+name = "F4a_overview"
+chains = "A,B,C,D,G,H,I,K,L"
+colors = "A:#bdbdbd;B:#a3a3a3;C:#8a8a8a;D:#2f6fd6;G:#2f6fd6;H:#2f6fd6;I:#8fbcf2;K:#8fbcf2;L:#8fbcf2"
+
+[[figure]]
+input = "inputs/9ZTJ.cif"
+preset = "interface_closeup"
+name = "F4b_interface"
+chains = "A,B,C,D,I"
+partner = "chain D+I"
+
+# (c, d) bovine H5N1 HA with a human receptor analog (9JN0)
+[[figure]]
+input = "inputs/9JN0.cif"
+preset = "site"
+name = "F4c_site"
+chains = "A,B,C,F"
+partner = "chain F"
+
+[[figure]]
+input = "inputs/9JN0.cif"
+preset = "electrostatic"
+name = "F4d_electrostatic"
+chains = "A,B,C,F"
+partner = "chain F"
+region = "site"
+labels = "off"

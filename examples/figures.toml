@@ -1,0 +1,176 @@
+# PROTFIG example figures. Run:   ../protfig --config figures.toml --jobs 4
+# Each [[figure]] is one figure; keys are the command-line options without "--".
+# Paths are relative to this file.
+
+[defaults]
+out = "figures"
+
+# --- protein + ligand: CRBN–DDB1–CK1α with the molecular glue SJ3149 (8G66)
+[[figure]]
+input = "inputs/8G66.cif"
+preset = "overview"
+name = "8G66"
+chains = "B,C,A"
+chain_names = "B:CRBN,C:CK1α,A:DDB1"
+partner_name = "SJ3149"
+
+[[figure]]
+input = "inputs/8G66.cif"
+preset = "site"
+name = "8G66"
+chains = "B,C,A"
+
+[[figure]]
+input = "inputs/8G66.cif"
+preset = "pocket"
+name = "8G66"
+chains = "B,C,A"
+
+# --- SARS-CoV-2 Mpro with ensitrelvir: WT (8DZ0) and M49I mutant (8DZ1)
+[[figure]]
+input = "inputs/8DZ0.cif"
+preset = "site_faded"
+name = "8DZ0"
+chains = "A,B"
+
+[[figure]]
+input = "inputs/8DZ1.cif"
+preset = "site_faded"
+name = "8DZ1_M49I"
+chains = "A,B"
+ref = "inputs/8DZ0.cif"
+mutation = "chain A and resi 49"
+
+[[figure]]
+input = "inputs/8DZ0.cif"
+preset = "density"
+name = "8DZ0"
+chains = "A,B"
+map = "inputs/8dz0_2fofc.ccp4"
+
+[[figure]]
+input = "inputs/8DZ0.cif"
+preset = "outline"
+name = "8DZ0"
+chains = "A"
+highlight = "resi 200-306"
+
+[[figure]]
+input = "inputs/8DZ0.cif"
+preset = "illustrative"
+name = "8DZ0"
+chains = "A,B"
+
+[[figure]]
+input = "inputs/8DZ0.cif"
+preset = "illustrative"
+name = "8DZ0_surface"
+chains = "A"
+repr = "surface"
+
+[[figure]]
+input = "inputs/8DZ0.cif"
+preset = "pastel"
+name = "8DZ0"
+chains = "A,B"
+
+[[figure]]
+input = "inputs/8DZ0.cif"
+preset = "electrostatic"
+name = "8DZ0"
+chains = "A,B"
+
+[[figure]]
+input = "inputs/8DZ0.cif"
+preset = "lipophilic"
+name = "8DZ0"
+chains = "A,B"
+
+[[figure]]
+input = "inputs/8DZ0.cif"
+preset = "property"
+name = "8DZ0_bfactor"
+chains = "A"
+key = "resi 41+145+166"
+
+[[figure]]
+input = "inputs/8DZ0.cif"
+preset = "superpose"
+name = "8DZ0_vs_8DZ1"
+chains = "A,B"
+ref = "inputs/8DZ1.cif"
+
+# --- protein + peptide: MDM2 with the p53 peptide (1YCR)
+[[figure]]
+input = "inputs/1YCR.cif"
+preset = "site"
+name = "1YCR"
+palette = "chimerax"
+
+[[figure]]
+input = "inputs/1YCR.cif"
+preset = "binding_surface"
+name = "1YCR"
+
+[[figure]]
+input = "inputs/1YCR.cif"
+preset = "interface_closeup"
+name = "1YCR"
+
+# --- protein + protein: barnase–barstar (1BRS, chains A and D)
+[[figure]]
+input = "inputs/1BRS.cif"
+preset = "interface_closeup"
+name = "1BRS"
+chains = "A,D"
+labels = "on"
+
+[[figure]]
+input = "inputs/1BRS.cif"
+preset = "site"
+name = "1BRS"
+chains = "A,D"
+
+[[figure]]
+input = "inputs/1BRS.cif"
+preset = "illustrative"
+name = "1BRS"
+chains = "A,D"
+
+[[figure]]
+input = "inputs/1BRS.cif"
+preset = "binding_surface"
+name = "1BRS"
+chains = "A,D"
+
+# --- oligomeric assembly (9P3Y)
+[[figure]]
+input = "inputs/9P3Y.cif"
+preset = "oligomer"
+name = "9P3Y"
+
+# --- membrane protein: β2-adrenergic receptor in DPPC + nanobody (3P0G)
+[[figure]]
+input = "inputs/3P0G_membrane_nanobody.pdb"
+preset = "membrane"
+name = "3P0G"
+partner = "chain B"
+
+# --- user options: black background, serif font, large labels with chain
+[[figure]]
+input = "inputs/8G66.cif"
+preset = "site"
+name = "8G66_custom"
+chains = "B,C,A"
+bg = "black"
+font = "serif-bold"
+label_size = 1.3
+label_style = "chain"
+palette = "chimerax"
+hbond_color = "white"
+
+# --- reuse the view and selections from a previously generated .pse, with another style
+[[figure]]
+input = "figures/site/8G66/8G66.pse"
+preset = "site_faded"
+name = "8G66_from_site_pse"

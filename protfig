@@ -1,0 +1,9 @@
+#!/bin/sh
+# protfig — shortcut for `pymol -cq protfig.py -- <options>`. Usage: protfig <structure> --preset <style> [options]
+DIR="$(cd "$(dirname "$0")" && pwd)"
+PYMOL="${PYMOL:-pymol}"
+if ! command -v "$PYMOL" >/dev/null 2>&1; then
+  echo "protfig: PyMOL not found ('$PYMOL'). Install it (see README) or set PYMOL=/path/to/pymol" >&2
+  exit 1
+fi
+exec "$PYMOL" -cq "$DIR/protfig.py" -- "$@"
