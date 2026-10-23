@@ -85,8 +85,10 @@ out on Discord (`alluring_hamster_56289`).
 
 If PROTFIG is useful in your work, please cite:
 
-> L. America Chi. PROTFIG: one-command, publication-quality biomolecular figures. Preprint (2026).
+> L. America Chi. PROTFIG: one-command, publication-quality biomolecular figures. bioRxiv (2026).
 > https://doi.org/10.64898/2026.10.20.760606
+
+<a href="https://doi.org/10.64898/2026.10.20.760606"><img src="docs/preprint_qr.png" alt="QR code linking to the PROTFIG preprint on bioRxiv" width="140"></a>
 
 ## License
 
