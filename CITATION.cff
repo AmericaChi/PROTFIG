@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If PROTFIG is useful in your work, please cite the preprint below."
+title: "PROTFIG"
+type: software
+license: MIT
+repository-code: "https://github.com/AmericaChi/PROTFIG"
+authors:
+  - family-names: Chi
+    given-names: L. America
+preferred-citation:
+  type: article
+  title: "PROTFIG: one-command, publication-quality biomolecular figures"
+  authors:
+    - family-names: Chi
+      given-names: L. America
+  year: 2026
+  doi: "10.64898/2026.10.20.760606"
+  url: "https://doi.org/10.64898/2026.10.20.760606"

@@ -75,6 +75,13 @@ cd paper_figures
 ./get_inputs.sh && ../protfig --config figures.toml --jobs 8
 ```
 
+## Citation
+
+If PROTFIG is useful in your work, please cite:
+
+> L. America Chi. PROTFIG: one-command, publication-quality biomolecular figures. Preprint (2026).
+> https://doi.org/10.64898/2026.10.20.760606
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
