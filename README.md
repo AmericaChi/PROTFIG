@@ -75,6 +75,12 @@ cd paper_figures
 ./get_inputs.sh && ../protfig --config figures.toml --jobs 8
 ```
 
+## Contributing and feedback
+
+Contributions from the community are welcome: fork the repository, make your changes and open a
+pull request. For questions, bug reports or suggestions, write to chiamerika@hotmail.com or reach
+out on Discord (`alluring_hamster_56289`).
+
 ## Citation
 
 If PROTFIG is useful in your work, please cite:
