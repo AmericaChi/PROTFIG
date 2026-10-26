@@ -163,7 +163,8 @@ def show_partner(ctx, carbon, style="sticks", radius=0.25, cartoon=None):
         color_by_element("PARTNER_MOL", c_name)
     else:
         cmd.show("cartoon", "PARTNER_MOL")
-        cmd.show("sticks", "byres (PARTNER_MOL in lig_core) and (sidechain or name CA)")
+        if ctx.opt("partner_sticks", "on") == "on":  # --partner_sticks off: cartoon only
+            cmd.show("sticks", "byres (PARTNER_MOL in lig_core) and (sidechain or name CA)")
         cmd.set("stick_radius", radius, "PARTNER_MOL")
         color_by_element("PARTNER_MOL", c_name)
         cmd.set("cartoon_color", define("mf_partner_cartoon", cartoon or mix(carbon, "white", 0.3)), "PARTNER_MOL")

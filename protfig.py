@@ -86,6 +86,8 @@ def build_parser():
     g.add_argument("--mutation", help="mutated residue, as translucent spheres (site_faded)")
     g.add_argument("--focus", help="selection to place at the top in the automatic view")
     g.add_argument("--show_partner", choices=ONOFF, help="binding_surface: show the partner (default off)")
+    g.add_argument("--partner_sticks", choices=ONOFF,
+                   help="peptide/protein partner: side chains as sticks (default on); off = cartoon only")
     g.add_argument("--ref", help="second structure (superpose; site_faded: its ligand as a ghost)")
     g.add_argument("--map", help="density map .ccp4/.map/.mrc (density)")
     g.add_argument("--map_level", type=float, default=1.0, help="mesh contour level in σ (default 1.0)")

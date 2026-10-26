@@ -72,6 +72,7 @@ Colors accept PyMOL names (`salmon`), `#rrggbb` or `"r g b"` (0-1). Defaults dep
 | `--region site\|all` | site or whole molecule (`electrostatic`, `lipophilic`) |
 | `--glycans on` | glycans as sticks (cartoon and surface presets) |
 | `--show_partner on` | show the partner in `binding_surface` |
+| `--partner_sticks off` | peptide or protein partner as cartoon only, without side-chain sticks |
 | `--waters` | keep crystallographic waters |
 
 **Colors**
