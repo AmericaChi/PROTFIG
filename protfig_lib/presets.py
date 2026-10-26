@@ -58,11 +58,15 @@ class Ctx:
     # -- per-chain colors
     def chain_colors(self, palette):
         pal = PALETTES[self.a.palette or palette]
-        over = {}
+        over, pending = {}, []
         for tok in (self.a.colors or "").replace(",", ";").split(";"):
-            if ":" in tok:
+            if ":" in tok:  # "A,B:palecyan" gives A and B the same color
                 k, v = tok.split(":", 1)
-                over[k.strip()] = rgb_of(v)
+                for c in pending + [k.strip()]:
+                    over[c] = rgb_of(v)
+                pending = []
+            elif tok.strip():
+                pending.append(tok.strip())
         for i, c in enumerate(self.chains):
             self.colors[c] = over.get(c, pal[i % len(pal)])
             define(f"mf_chain_{c}", self.colors[c])
@@ -82,7 +86,7 @@ class Ctx:
 
     def chain_names(self):
         out = {}
-        for tok in (self.a.chain_names or "").split(","):
+        for tok in (self.a.chain_names or "").replace(";", ",").split(","):
             if ":" in tok:
                 k, v = tok.split(":", 1)
                 out[k.strip()] = v.strip()

@@ -26,7 +26,9 @@ PROTFIG automatically removes hydrogens, waters, crystallization additives (glyc
 sulfate...) and simulation solvent and ions. Keep crystallographic waters with `--waters`.
 
 `--chains B,C,A` keeps only those chains and sets the color order: the first chain gets the first
-color of the palette.
+color of the palette. Chain IDs are the author chain IDs (`auth` on the PDB website), which can
+differ from the label IDs some pages show (in 7NRE, label chain B is author chain C). If a chain is
+not found, PROTFIG lists the chains present and suggests the right ID.
 
 ## 2. The binding partner and the site
 

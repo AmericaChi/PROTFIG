@@ -234,6 +234,10 @@ def clean(a, user, keep_lipids=False):
         cmd.alter(f'{BASE} and chain ""', "chain = segi.strip()[:1] or 'A'")
     if a.chains:
         chains = [c.strip() for c in a.chains.split(",") if c.strip()]
+        present = cmd.get_chains(BASE)
+        missing = [c for c in chains if c not in present]
+        if missing:
+            raise ProtFigError(f"--chains: chain {', '.join(missing)} is not in the structure. " + chain_help(missing))
         cmd.remove(f"{BASE} and not chain {'+'.join(chains)} and not resn {'+'.join(LIPIDS)}")
     if not a.waters:
         cmd.remove(f"{BASE} and solvent")
@@ -243,6 +247,18 @@ def clean(a, user, keep_lipids=False):
         cmd.dss(BASE)
     if cmd.count_atoms(f"{BASE} and polymer") == 0:
         raise ProtFigError("no protein/nucleic acid left in the structure after cleanup (is --chains correct?)")
+
+
+def chain_help(missing):
+    """Lists the chains present; for mmCIF files, also says which author chain a missing ID is the
+    label (PDB website) name of, e.g. 7NRE: label chain B = author chain C."""
+    msg = f"Available chains: {', '.join(cmd.get_chains(BASE))}."
+    for c in missing:
+        auth = cmd.get_chains(f"{BASE} and polymer and segi {c}")
+        if auth and c not in auth:
+            msg += (f"\n  Label chain {c} (the name some PDB pages show) is author chain {auth[0]} in this"
+                    f" file; PROTFIG uses author chains, so use {auth[0]}.")
+    return msg
 
 
 def _keep_partner(a, user):
@@ -309,7 +325,10 @@ def find_partner(a, user, mode="required"):
             return None, None
     if cmd.count_atoms(sel) == 0:
         what = a.partner or "'partner' selection in the .pse"
-        raise ProtFigError(f'--partner "{what}" selects no atoms (is the residue name or chain correct?)')
+        named = re.findall(r"\bchain\s+([\w+]+)", a.partner or "")
+        missing = [c for tok in named for c in tok.split("+") if not cmd.count_atoms(f"{BASE} and chain {c}")]
+        hint = chain_help(missing) if missing else "Is the residue name or chain correct?"
+        raise ProtFigError(f'--partner "{what}" selects no atoms. {hint}')
     cmd.select("ligand", sel)
     kind = partner_kind("ligand")
     if cmd.count_atoms(f"{BASE} and polymer and not ligand") == 0:
