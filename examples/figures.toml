@@ -117,6 +117,11 @@ input = "inputs/1YCR.cif"
 preset = "interface_closeup"
 name = "1YCR"
 
+[[figure]]
+input = "inputs/1YCR.cif"
+preset = "profile"
+name = "1YCR"
+
 # --- protein + protein: barnase–barstar (1BRS, chains A and D)
 [[figure]]
 input = "inputs/1BRS.cif"

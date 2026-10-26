@@ -45,6 +45,7 @@ quick preview.
 | `pocket` | The ligand or peptide lying in its surface groove |
 | `interface_closeup` | Close-up of a protein-protein or peptide interface |
 | `binding_surface` | Binding footprint on the receptor surface |
+| `profile` | Side view: receptor surface with the peptide or protein partner on top |
 | `density` | Site with the electron-density mesh |
 | `overview` | Whole complex, colored by chain |
 | `outline` | Cartoon with outline, highlighted region and key residues |

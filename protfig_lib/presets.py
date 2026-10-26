@@ -828,6 +828,47 @@ def interface_closeup(ctx):
     return view
 
 
+@preset(partner="required", kinds=("peptide", "protein"), size=(1800, 1200), glycans=True)
+def profile(ctx):
+    """Side view of the whole complex: receptor as a solid light-pink surface, peptide/protein partner
+    as a pale-cyan cartoon on top, black outline. The camera looks along the
+    binding interface, with the partner above the receptor and the long axis of the complex
+    horizontal. --receptor_color / --partner_color to recolor; --partner_sticks on adds side chains."""
+    a = ctx.a
+    need_partner(ctx, "profile")
+    if a.partner_sticks is None:
+        a.partner_sticks = "off"
+    cmd.create("SURFACE", ctx.receptor)
+    cmd.hide("everything", "SURFACE")
+    cmd.show("surface", "SURFACE")
+    cmd.color(define("mf_rec", ctx.rgb("receptor_color", "lightpink")), "SURFACE")
+    cmd.set("transparency", ctx.opt("surface_transparency", 0.0), "SURFACE")
+    par_c = rgb_of(a.partner_color) if a.partner_color else rgb_of("palecyan")
+    show_partner(ctx, par_c, radius=0.3, cartoon=par_c)
+    finish_lighting(ray_trace_mode=1, ray_trace_gain=0.1, ambient=0.5, direct=0.5, specular=0, spec_reflect=0,
+                    cartoon_transparency=0, cartoon_loop_radius=0.3, cartoon_fancy_helices=0, ray_shadows=0)
+    if a.view or (ctx.session_view and not a.auto_view):
+        return ctx.view("overview")
+    # partner above the receptor (up = receptor centroid -> partner), partner long axis horizontal,
+    # camera raised 30 degrees so a partner lying in a groove is not hidden by its walls
+    L, P = cmd.get_coords("lig_core"), cmd.get_coords(ctx.receptor)
+    up = L.mean(0) - P.mean(0)
+    up /= np.linalg.norm(up)
+    both = np.vstack([L, P])
+    ax = np.linalg.svd(L - L.mean(0))[2][0] if len(L) > 2 else np.linalg.svd(both - both.mean(0))[2][0]
+    x = ax - np.dot(ax, up) * up
+    x /= np.linalg.norm(x)
+    t = np.radians(30.0)
+    z = np.cos(t) * np.cross(x, up) + np.sin(t) * up
+    y = up - np.dot(up, z) * z
+    y /= np.linalg.norm(y)
+    R = adjust(np.vstack([np.cross(y, z), y, z]), a)
+    xyz = np.vstack([cmd.get_coords(ctx.receptor), cmd.get_coords("PARTNER_MOL")])
+    cam = xyz @ R.T
+    center = ((cam.max(axis=0) + cam.min(axis=0)) / 2) @ R
+    return frame(R, center, xyz, ctx.aspect, margin=1.05)
+
+
 @preset(partner="none", kinds=(), size=(1280, 960), glycans=True)
 def oligomer(ctx):
     """Oligomeric assembly as a surface, one color per chain (default: alternating light/dark
