@@ -93,6 +93,13 @@ name = "8DZ0_bfactor"
 chains = "A"
 key = "resi 41+145+166"
 
+# --- AlphaFold model: free fatty acid receptor 2 (FFAR2, UniProt O15552), colored by pLDDT.
+# From the AlphaFold Protein Structure Database (CC BY 4.0; Jumper et al. 2021, Varadi et al. 2024).
+[[figure]]
+input = "data/AF-O15552-F1-model_v6.pdb"
+preset = "plddt"
+name = "AF-O15552"
+
 [[figure]]
 input = "inputs/8DZ0.cif"
 preset = "superpose"

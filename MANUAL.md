@@ -72,6 +72,7 @@ Colors accept PyMOL names (`salmon`), `#rrggbb` or `"r g b"` (0-1). Defaults dep
 | `--mutation "resi 49"`, `--ref other.cif` | mutated residue; second structure (`site_faded`, `superpose`) |
 | `--map map.ccp4`, `--map_level 1.0` | electron density (`density`) |
 | `--values file.txt` | per-residue values, lines `chain resi value` (`property`) |
+| `--prop_label`, `--prop_range`, `--prop_ticks` | color bar title, scale range and end labels (`property`; `--prop_label` also in `plddt`) |
 | `--region site\|all` | site or whole molecule (`electrostatic`, `lipophilic`) |
 | `--glycans on` | glycans as sticks (cartoon and surface presets) |
 | `--show_partner on` | show the partner in `binding_surface` |
@@ -210,6 +211,9 @@ The membrane protein is drawn as spheres; a partner given with `--partner` is dr
   formal charges (Asp, Glu, Lys, Arg and termini at neutral pH, His neutral, metal ions, and charges
   annotated in the file). It is a fast approximation; use Poisson-Boltzmann (e.g. APBS) for
   quantitative work.
+- **pLDDT**: the `plddt` preset reads AlphaFold confidence from the B-factor column (AlphaFold 2
+  and 3 models, `.pdb` or `.cif`). On an experimental structure it would color by B-factor, so use
+  it only for predicted models.
 - **Lipophilicity**: molecular lipophilicity potential with simplified atomic contributions.
 - **Density**: PDBe 2Fo-Fc maps can be downloaded from
   `https://www.ebi.ac.uk/pdbe/entry-files/download/<pdb id>.ccp4`.

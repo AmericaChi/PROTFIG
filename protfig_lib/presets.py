@@ -110,7 +110,7 @@ class Ctx:
         return f"byres ({self.receptor} within {cutoff} of lig_core)"
 
     # -- views
-    def view(self, kind, center_sel=None, frame_sel=None, margin=1.06, clip=None):
+    def view(self, kind, center_sel=None, frame_sel=None, margin=1.06, clip=None, fit_box=False):
         """kind: 'overview' | 'site'. If --view or a .pse view is given, that one is used."""
         a = self.a
         if a.view:
@@ -130,7 +130,7 @@ class Ctx:
         up = self.sel("focus") or (f"{BASE} and chain {self.chains[0]}" if len(self.chains) > 1 else None)
         c, R = overview_R(sel, self.aspect, toward="ligand" if self.lig else None, up_sel=up)
         R = adjust(R, a)
-        return frame(R, c, cmd.get_coords(frame_sel or sel), self.aspect, margin=margin)
+        return frame(R, c, cmd.get_coords(frame_sel or sel), self.aspect, margin=margin, fit_box=fit_box)
 
 
 def R_of(view):
@@ -710,6 +710,55 @@ def property_(ctx):
     fields.colorbar(f"{a.prefix}_colorbar", list(np.linspace(lo, hi, len(cols))), cols, prop_label, ticks=[lo, hi],
                     ticklabels=a.prop_ticks.split(",") if a.prop_ticks else [f"{lo:.0f}", f"{hi:.0f}"])
     view = ctx.view("overview", margin=1.05)
+    if key and ctx.labels_on(True):
+        lab = residues(f"byres (CARTOON in ({key})) and name CA")
+        add_labels("LABELS", residue_label_items(lab, "CARTOON", cmd.get_coords("CARTOON").mean(0), lambda c: (0, 0, 0)),
+                   R_of(view), label_size(view, 0.03), view=view)
+    return view
+
+
+# AlphaFold confidence bands (pLDDT), with the AlphaFold Database colors
+PLDDT_BANDS = [(90, "Very high", "#0053D6"), (70, "Confident", "#65CBF3"), (50, "Low", "#FFDB13"),
+               (0, "Very low", "#FF7D45")]
+
+
+@preset(partner="optional", kinds=("small", "peptide", "protein"), size=(1600, 1600), glycans=True)
+def plddt(ctx):
+    """AlphaFold model colored by confidence (pLDDT, read from the B-factor column) with the
+    AlphaFold Database colors: >90 dark blue, 70-90 light blue, 50-70 yellow, <50 orange.
+    Discrete color bar; --key residues in sticks."""
+    a = ctx.a
+    cmd.create("CARTOON", ctx.receptor if ctx.kind == "small" else f"{BASE} and polymer")
+    cmd.hide("everything", "CARTOON")
+    cmd.show("cartoon", "CARTOON")
+    vals = []
+    cmd.iterate("CARTOON and name CA", "vals.append(b)", space={"vals": vals})
+    if vals and (max(vals) > 100 or min(vals) < 0 or max(vals) <= 1):
+        print(f"[PROTFIG] warning: B-factors range {min(vals):.1f}-{max(vals):.1f}; this does not look like "
+              "pLDDT (0-100). Is this an AlphaFold model?", file=sys.stderr)
+    bs = {}  # per-residue pLDDT = mean over its atoms (AlphaFold 3 writes per-atom values)
+    cmd.iterate("CARTOON", "bs.setdefault((chain, resi), []).append(b)", space={"bs": bs})
+    for (c, r), v in bs.items():
+        cmd.alter(f"CARTOON and chain {c} and resi \\{r}", f"b = {sum(v) / len(v)}")
+    for i, (cut, _, hexc) in enumerate(PLDDT_BANDS):
+        upper = PLDDT_BANDS[i - 1][0] if i else None
+        sel = f"CARTOON and (b > {cut} or b = {cut})" + (f" and b < {upper}" if upper is not None else "")
+        cmd.color(define(f"mf_plddt_{i}", rgb_of(hexc)), sel)
+    key = ctx.sel("key")
+    if key:
+        cmd.show("sticks", f"byres (CARTOON in ({key})) and (sidechain or name CA)")
+        cmd.util.cnc(f"byres (CARTOON in ({key}))")
+    if ctx.kind == "small":
+        show_partner(ctx, ctx.partner_rgb((0.6, 0.6, 0.6)), radius=0.22)
+    finish_lighting(cartoon_loop_radius=0.3, ray_trace_mode=1, ray_trace_gain=0.0, ray_trace_color="grey25", ambient=0.55)
+    cols = [rgb_of(h) for _, _, h in reversed(PLDDT_BANDS)]
+    levels, stops = [], []
+    for i, col in enumerate(cols):  # equal-width blocks; repeated stops -> sharp steps between bands
+        levels += [i, i + 1]
+        stops += [col, col]
+    fields.colorbar(f"{a.prefix}_colorbar", levels, stops, a.prop_label or "pLDDT", ticks=list(range(5)),
+                    ticklabels=["0", "50", "70", "90", "100"])
+    view = ctx.view("overview", margin=1.05, fit_box=True)
     if key and ctx.labels_on(True):
         lab = residues(f"byres (CARTOON in ({key})) and name CA")
         add_labels("LABELS", residue_label_items(lab, "CARTOON", cmd.get_coords("CARTOON").mean(0), lambda c: (0, 0, 0)),

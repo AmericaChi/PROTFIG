@@ -56,6 +56,7 @@ quick preview.
 | `electrostatic` | Surface colored by electrostatic potential |
 | `lipophilic` | Surface colored by lipophilicity |
 | `property` | Cartoon colored by B-factor or your own per-residue values |
+| `plddt` | AlphaFold model colored by confidence (pLDDT), AlphaFold Database colors |
 | `superpose` | Two superposed structures, with RMSD |
 
 There is a thumbnail of every preset in [`docs/presets/`](docs/presets).

@@ -383,13 +383,20 @@ def adjust(R, a):
     return R
 
 
-def frame(R, center, frame_xyz, aspect, margin=1.06, front_z=None):
+def frame(R, center, frame_xyz, aspect, margin=1.06, front_z=None, fit_box=False):
     """PyMOL view with rotation R (rows = camera axes), centered on center, framing frame_xyz.
 
     front_z: if given, front clipping plane at that camera z coordinate (relative to center);
     anything closer to the camera is clipped (to look inside a pocket).
+    fit_box: center on the on-screen bounding box instead (long flexible tails no longer push
+    the molecule off-center).
     """
     cam = (frame_xyz - center) @ R.T
+    if fit_box:
+        mid = (cam.min(0) + cam.max(0)) / 2
+        mid[2] = 0.0
+        center = center + mid @ R
+        cam = cam - mid
     half = math.radians(cmd.get_setting_float("field_of_view") / 2.0)
     zmax = np.max(cam[:, 2]) if front_z is None else min(front_z, np.max(cam[:, 2]))
     need = max(np.max(np.abs(cam[:, 1])), np.max(np.abs(cam[:, 0])) / aspect)
