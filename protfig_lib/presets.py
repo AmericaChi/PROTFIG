@@ -485,35 +485,62 @@ def site_faded(ctx):
 def outline(ctx):
     """Cartoon with black outline: base color (--receptor_color) + highlighted region (--highlight,
     --highlight_color), partner in cyan sticks (peptide/protein in cartoon), key residues
-    (--key, or those forming H-bonds) in yellow sticks."""
+    (those forming H-bonds, plus --key) in yellow sticks. --highlight interface shades the
+    interface on both sides (--partner_highlight_color) and shows key residues of both sides."""
     a = ctx.a
+    want_iface = (a.highlight or "").strip().lower() == "interface"
+    iface = want_iface and ctx.kind in ("peptide", "protein")  # both sides; a small ligand: receptor side only
     cmd.create("CARTOON", ctx.receptor)
     cmd.hide("everything", "CARTOON")
     cmd.show("cartoon", "CARTOON")
     cmd.color(define("mf_base", ctx.rgb("receptor_color", (0.25, 0.42, 0.75))), "CARTOON")
-    hl = ctx.sel("highlight")
+    hl_c = ctx.rgb("highlight_color", (0.98, 0.52, 0.1))
+    hl = ctx.site(a.site_cutoff) if want_iface else ctx.sel("highlight")
     if hl:
-        cmd.color(define("mf_hl", ctx.rgb("highlight_color", (0.98, 0.52, 0.1))), f"CARTOON in ({hl})")
+        cmd.color(define("mf_hl", hl_c), f"CARTOON in ({hl})")
     finish_lighting(cartoon_fancy_helices=1, cartoon_highlight_color=-1, cartoon_loop_radius=0.3,
                     cartoon_oval_length=1.35)
+    par_c = ctx.partner_rgb((0.35, 0.85, 0.9))
     if ctx.lig:
-        show_partner(ctx, ctx.partner_rgb((0.35, 0.85, 0.9)), radius=0.22)
-        if ctx.kind == "peptide":
+        if iface and a.partner_sticks is None:
+            a.partner_sticks = "off"  # only the key residues in sticks
+        show_partner(ctx, par_c, radius=0.22, cartoon=par_c if iface else None)
+        if ctx.kind == "peptide" and not iface:
             cmd.hide("cartoon", "PARTNER_MOL")
             cmd.show("sticks", "PARTNER_MOL")
-    key = ctx.sel("key")
+    par_hl_c = ctx.rgb("partner_highlight_color", mix(par_c, "black", 0.35))
+    if iface:
+        cmd.color(define("mf_par_hl", par_hl_c), f"PARTNER_MOL and ({partner_core_obj()})")
+        cmd.set("cartoon_color", "mf_par_hl", f"PARTNER_MOL and ({partner_core_obj()})")
     pairs = hbonds(ctx, "CARTOON", dash_radius=0.09)
-    if not key and pairs:
-        key = f"{BASE} and (" + " or ".join(f"(chain {c} and resi \\{r})" for _, (c, _, r, _), _ in pairs) + ")"
+    hb_res = {(c, r) for _, (c, _, r, _), _ in pairs}
+    if iface:
+        hb_res |= {(c, r) for (c, _, r, _), _, _ in pairs}
+    key = " or ".join([f"({ctx.sel('key')})"] * bool(ctx.sel("key"))
+                      + [f"({BASE} and chain {c} and resi \\{r})" for c, r in sorted(hb_res)])
     if key:
-        cmd.create("KEY", f"byres ({key})")
+        cmd.create("KEY", f"byres ({key}) and polymer")
         cmd.hide("everything", "KEY")
         cmd.show("sticks", "KEY and (sidechain or name CA)")
         cmd.set("stick_radius", 0.22, "KEY")
-        color_by_element("KEY", define("mf_key", ctx.rgb("key_color", (1.0, 1.0, 0.1))))
+        if iface and ctx.lig and not a.key_color:  # each side in a darker shade of its interface color
+            color_by_element("KEY and not (KEY in PARTNER_MOL)", define("mf_key", mix(hl_c, "black", 0.2)))
+            color_by_element("KEY and (KEY in PARTNER_MOL)", define("mf_key_par", mix(par_hl_c, "black", 0.2)))
+        else:
+            color_by_element("KEY", define("mf_key", ctx.rgb("key_color", (1.0, 1.0, 0.1))))
     finish_lighting(ray_trace_mode=1, ray_trace_gain=0.05, ambient=0.45, direct=0.55, specular=0.15,
                     spec_reflect=0.15, fog_start=0.4, fog=0.6)
-    return ctx.view("overview", margin=1.04)
+    view = ctx.view("overview", margin=1.04)
+    if key and ctx.labels_on(False) and ctx.lig:
+        rec = residues("KEY and not (KEY in PARTNER_MOL) and name CA")
+        par = residues("KEY and (KEY in PARTNER_MOL) and name CA")
+        items = residue_label_items(rec, "KEY", cmd.get_coords("KEY").mean(0) if not par else
+                                    cmd.get_coords("KEY and (KEY in PARTNER_MOL)").mean(0), lambda c: mix(hl_c, "black", 0.45))
+        if par:
+            items += residue_label_items(par, "KEY", cmd.get_coords("KEY and not (KEY in PARTNER_MOL)").mean(0) if rec else
+                                         cmd.get_coords("KEY").mean(0), lambda c: mix(par_hl_c, "black", 0.45))
+        add_labels("LABELS", items, R_of(view), label_size(view, 0.03), font=7, view=view)
+    return view
 
 
 @preset(partner="optional", kinds=("small", "peptide", "protein"), size=(1600, 1600), glycans=True)

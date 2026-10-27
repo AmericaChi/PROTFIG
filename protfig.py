@@ -81,7 +81,7 @@ def build_parser():
                    help="site/interface residues: within N Å of the partner (default 4)")
     g.add_argument("--pocket_cutoff", type=float,
                    help="binding_surface: pocket residues within N Å of the partner (default 8)")
-    g.add_argument("--highlight", help="region to highlight (outline)")
+    g.add_argument("--highlight", help="region to highlight (outline); \"interface\" shades both sides of a protein-protein/peptide interface")
     g.add_argument("--key", help="key residues as sticks (outline, property)")
     g.add_argument("--mutation", help="mutated residue, as translucent spheres (site_faded)")
     g.add_argument("--focus", help="selection to place at the top in the automatic view")
@@ -108,6 +108,7 @@ def build_parser():
                    help="receptor color (outline, site_faded, binding_surface, interface_closeup)")
     g.add_argument("--site_color", help="site residue color (site_faded, binding_surface)")
     g.add_argument("--highlight_color", help="--highlight color (default orange)")
+    g.add_argument("--partner_highlight_color", help="partner-side interface color with --highlight interface (default: darker partner color)")
     g.add_argument("--key_color", help="--key color (default yellow)")
     g.add_argument("--hbond_color", help="H-bond color (default yellow)")
     g.add_argument("--mutation_color", help="color of the --mutation spheres")
@@ -328,7 +329,10 @@ def run_one(argv):
     bg_rgb = apply_background(a)
     core.clean(a, user, keep_lipids=a.preset == "membrane")
     chains = core.chain_order(a, user)
-    lig, kind = core.find_partner(a, user, meta["partner"])
+    mode = meta["partner"]
+    if (a.highlight or "").strip().lower() == "interface" and mode == "optional":
+        mode = "required"  # --highlight interface: also look for a partner chain
+    lig, kind = core.find_partner(a, user, mode)
     if kind and meta["kinds"] and kind not in meta["kinds"]:
         print(f"WARNING: style '{a.preset}' is not designed for a {KIND_NAMES[kind]} partner; "
               f"works with: {', '.join(KIND_NAMES[k] for k in meta['kinds'])}.")

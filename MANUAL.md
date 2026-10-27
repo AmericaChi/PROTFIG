@@ -67,7 +67,8 @@ Colors accept PyMOL names (`salmon`), `#rrggbb` or `"r g b"` (0-1). Defaults dep
 | `--chains B,C,A` | chains to keep and their color order |
 | `--partner`, `--partner_chain` | choose the binding partner |
 | `--site`, `--site_cutoff`, `--pocket_cutoff` | site residues |
-| `--highlight "resi 1-140"`, `--key "resi 41+145"` | highlighted region and key residues (`outline`) |
+| `--highlight "resi 1-140"`, `--key "resi 41+145"` | highlighted region and key residues (`outline`); key residues are added to those forming H-bonds |
+| `--highlight interface` | shade the interface on both sides of a protein-protein or peptide complex, with H-bond and `--key` residues of both sides in sticks (`outline`) |
 | `--mutation "resi 49"`, `--ref other.cif` | mutated residue; second structure (`site_faded`, `superpose`) |
 | `--map map.ccp4`, `--map_level 1.0` | electron density (`density`) |
 | `--values file.txt` | per-residue values, lines `chain resi value` (`property`) |
@@ -84,7 +85,7 @@ Colors accept PyMOL names (`salmon`), `#rrggbb` or `"r g b"` (0-1). Defaults dep
 | `--palette` | `vivid`, `chimerax`, `muted`, `pastel`, `illustrative`, `grays`, `membrane` |
 | `--colors "A:salmon;B:#88cc44"` | color of specific chains |
 | `--partner_color`, `--receptor_color`, `--site_color`, `--hbond_color` | main elements |
-| `--highlight_color`, `--key_color`, `--mutation_color`, `--glycan_color`, `--lipid_color`, `--mesh_color`, `--ref_color` | preset-specific elements |
+| `--highlight_color`, `--partner_highlight_color`, `--key_color`, `--mutation_color`, `--glycan_color`, `--lipid_color`, `--mesh_color`, `--ref_color` | preset-specific elements |
 | `--bg white\|black\|transparent\|<color>` | background (default white) |
 | `--outline on\|off`, `--outline_color` | black outline of the shapes |
 | `--surface_transparency`, `--cartoon_transparency` | 0 to 1 |
