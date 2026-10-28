@@ -17,11 +17,19 @@ from pymol import cmd
 
 from . import fields
 from .core import (BASE, GLYCANS, LIPIDS, METALS, ProtFigError, PALETTES, add_labels, adjust, color_by_element, define, facing_R, frame,
-                   membrane_R, mix, overview_R, polar_contacts, residue_label_items, residues, rgb_of, site_R,
+                   membrane_R, mix, overview_R, polar_contacts, residue_label_items, residue_sel, residues, rgb_of, site_R,
                    vis_height, write_contacts)
 
 HB_YELLOW = (1.0, 0.88, 0.0)  # H-bonds: yellow, readable on white and on most surfaces
 PRESETS = {}
+# atoms drawn as sticks for a residue: PyMOL's 'sidechain' skips non-standard residues (MSE, SEP,
+# staples...), so --nonstandard_sticks on switches to "everything but the backbone N, C, O"
+SIDECHAIN = "(sidechain or name CA)"
+
+
+def set_sidechain_mode(nonstandard):
+    global SIDECHAIN
+    SIDECHAIN = "(not name N+C+O+OXT)" if nonstandard else "(sidechain or name CA)"
 
 
 def preset(partner, kinds, size, glycans=False):
@@ -168,7 +176,7 @@ def show_partner(ctx, carbon, style="sticks", radius=0.25, cartoon=None):
     else:
         cmd.show("cartoon", "PARTNER_MOL")
         if ctx.opt("partner_sticks", "on") == "on":  # --partner_sticks off: cartoon only
-            cmd.show("sticks", "byres (PARTNER_MOL in lig_core) and (sidechain or name CA)")
+            cmd.show("sticks", f"byres (PARTNER_MOL in lig_core) and {SIDECHAIN}")
         cmd.set("stick_radius", radius, "PARTNER_MOL")
         color_by_element("PARTNER_MOL", c_name)
         cmd.set("cartoon_color", define("mf_partner_cartoon", cartoon or mix(carbon, "white", 0.3)), "PARTNER_MOL")
@@ -179,12 +187,13 @@ def partner_core_obj():
     return "(PARTNER_MOL in lig_core)"
 
 
-def show_metals(near="ligand", obj="METALS"):
+def show_metals(near="ligand", obj="METAL_IONS", scale=0.35):
+    """Metal ions as gray spheres; near=None: all of them, scale: sphere size (larger for whole-molecule views)."""
     s = f"{BASE} and resn {'+'.join(METALS)}" + (f" and (all within 6 of {near})" if near else "")
     if cmd.count_atoms(s):
         cmd.create(obj, s)
         cmd.show("spheres", obj)
-        cmd.set("sphere_scale", 0.35, obj)
+        cmd.set("sphere_scale", scale, obj)
         cmd.color("grey50", obj)
 
 
@@ -262,7 +271,7 @@ def site_labels(ctx, view, site_obj, color_of, frac=0.03, font=7, partner_color=
 def site_sticks(ctx, cutoff, obj="SITE_STICKS", radius=0.22):
     cmd.create(obj, ctx.site(cutoff))
     cmd.hide("everything", obj)
-    cmd.show("sticks", f"{obj} and (sidechain or name CA)")
+    cmd.show("sticks", f"{obj} and {SIDECHAIN}")
     cmd.show("sticks", f"{obj} and resn GLY+PRO and name CA+N+C")
     cmd.set("stick_radius", radius, obj)
     return obj
@@ -299,6 +308,31 @@ def show_glycans(ctx):
     cmd.show("sticks", "GLYCANS")
     cmd.set("stick_radius", 0.7, "GLYCANS")  # visible at whole-molecule scale
     color_by_element("GLYCANS", define("mf_glycan", ctx.rgb("glycan_color", (0.25, 0.55, 0.85))))
+
+
+def show_het(ctx, scale=0.35):
+    """--keep_het: the remaining non-polymer residues (additives, buffers, ions, unassigned
+    ligands) as gray sticks, single atoms as spheres. Skips the partner, waters, glycans and
+    metals already drawn by --metals / site."""
+    sel = (f"{BASE} and not polymer and not solvent and not resn {'+'.join(GLYCANS)}"
+           + (" and not ligand" if ctx.lig else "")
+           + (f" and not resn {'+'.join(METALS)}" if "METAL_IONS" in cmd.get_names("objects") else ""))
+    cmd.create("HET_RES", sel)
+    if cmd.count_atoms("HET_RES") == 0:
+        print("WARNING: --keep_het, but the structure has no additives or ions left")
+        return
+    cmd.hide("everything", "HET_RES")
+    cmd.show("sticks", "HET_RES")
+    cmd.set("stick_radius", 0.2 if scale < 0.5 else 0.7, "HET_RES")
+    color_by_element("HET_RES", define("mf_het", ctx.rgb("het_color", (0.6, 0.6, 0.6))))
+    lone = cmd.get_model("HET_RES")
+    by_res = {}
+    for at in lone.atom:
+        by_res.setdefault((at.chain, at.resi, at.resn), []).append(at)
+    singles = [f"(chain {c} and resi \\{r} and resn {n})" for (c, r, n), ats in by_res.items() if len(ats) == 1]
+    if singles:
+        cmd.show("spheres", "HET_RES and (" + " or ".join(singles) + ")")
+        cmd.set("sphere_scale", scale, "HET_RES")
 
 
 @preset(partner="optional", kinds=("small", "peptide", "protein"), size=(1500, 2000), glycans=True)
@@ -365,7 +399,8 @@ def site(ctx):
     show_partner(ctx, pc, radius=0.24)
     if ctx.kind != "small":
         cmd.set("cartoon_transparency", ctx.opt("cartoon_transparency", 0.35), "PARTNER_MOL")
-    show_metals()
+    if ctx.opt("metals", "on") == "on":
+        show_metals()
     if ctx.kind == "small" and ctx.opt("partner_surface", "on") == "on":
         cmd.create("PARTNER_SURF", "ligand")
         cmd.hide("everything", "PARTNER_SURF")
@@ -380,6 +415,104 @@ def site(ctx):
     view = ctx.view("site", frame_sel=frame_sel, margin=1.12, clip=a.clip)
     site_labels(ctx, view, "SITE_STICKS", lambda c: mix(ctx.colors.get(c, (0, 0, 0)), "black", 0.15),
                 partner_color=mix(pc, "black", 0.25), pairs=pairs)
+    return view
+
+
+def covalent_links(partner_sel, receptor_sel, cutoff):
+    """Partner-receptor atom pairs within cutoff Å -> [(partner_atom, receptor_atom, dist, bonded)],
+    each atom as (chain, resi, resn, name, index). Bonds already in the file are within any sensible
+    cutoff, so the distance search finds them too; bonded says whether the file had the bond."""
+    def atom(obj, idx):
+        out = []
+        cmd.iterate(f"{obj} and index {idx}", "out.append((chain, resi, resn, name, index))", space={"out": out})
+        return out[0]
+    links = []
+    for (o1, i1), (o2, i2) in cmd.find_pairs(partner_sel, receptor_sel, cutoff=cutoff, mode=0):
+        p, r = atom(o1, i1), atom(o2, i2)
+        d = cmd.get_distance(f"{o1} and index {i1}", f"{o2} and index {i2}")
+        bonded = cmd.count_atoms(f"({o1} and index {i1}) and bound_to ({o2} and index {i2})") > 0
+        links.append((p, r, d, bonded))
+    return sorted(links, key=lambda x: x[2])
+
+
+@preset(partner="required", kinds=("small", "peptide"), size=(2000, 1700))
+def covalent(ctx):
+    """Covalently bound ligand or peptide (retinal-Lys in opsins, peptide acyl-enzymes...): the
+    partner and the receptor residue it is bonded to in sticks, in different colors, with the bond
+    between them; the rest in cartoon (--interface_sticks on: interface residues in sticks too);
+    labels on the two linked residues. The bond is taken from the file or, if missing, added for
+    partner-receptor atoms within --covalent_cutoff (default 2.0 Å)."""
+    a = ctx.a
+    need_partner(ctx, "covalent")
+    ctx.chain_colors("vivid")
+    cut = ctx.opt("covalent_cutoff", 2.0)
+    rec = f"({ctx.receptor}) and not resn {'+'.join(METALS)} and not hydro"
+    links = covalent_links(f"{BASE} and ligand and not hydro", rec, cut)
+    if not links:
+        raise ProtFigError(f"covalent: no partner atom within {cut} Å of the receptor; "
+                           "raise --covalent_cutoff or check --partner")
+    for p, r, d, bonded in links:
+        if not bonded:
+            cmd.bond(f"{BASE} and index {p[4]}", f"{BASE} and index {r[4]}")
+        print(f"covalent link: {p[0]}:{p[2]}{p[1]} {p[3]} - {r[0]}:{r[2]}{r[1]} {r[3]}  {d:.2f} Å"
+              + ("" if bonded else "  (bond not in the file: added)"))
+    rec_res = sorted({(r[0], r[1], r[2]) for _, r, _, _ in links})
+    par_res = sorted({(p[0], p[1], p[2]) for p, _, _, _ in links})
+    rec_sel = " or ".join(f"({BASE} and {residue_sel(c, i)})" for c, i, _ in rec_res)
+
+    cmd.create("CARTOON", ctx.receptor)
+    cmd.hide("everything", "CARTOON")
+    cmd.show("cartoon", "CARTOON")
+    cmd.set("cartoon_transparency", ctx.opt("cartoon_transparency", 0.5), "CARTOON")  # the link is often inside a helix
+    for c in ctx.chains:
+        cmd.color(f"mf_light_{c}", f"CARTOON and chain {c}")
+    frame_sel = "LINKED"
+    if ctx.opt("interface_sticks", "off") == "on":
+        site_sticks(ctx, a.site_cutoff)
+        cmd.remove(f"SITE_STICKS and ({rec_sel})")
+        for c in ctx.chains:
+            color_by_element(f"SITE_STICKS and chain {c}", define(f"mf_site_{c}", mix(ctx.colors[c], "white", 0.55)))
+        cmd.set("stick_radius", 0.16, "SITE_STICKS")  # thinner and lighter than the linked residues
+        write_site(ctx, "SITE_STICKS", a.site_cutoff)
+        frame_sel = "LINKED or SITE_STICKS"
+
+    # partner + bonded receptor residue(s) in one object: PyMOL only draws bonds within an object
+    pc = ctx.partner_rgb((0.0, 0.8, 0.82))
+    cmd.create("LINKED", f"({BASE} and ligand and not hydro) or ({rec_sel})")
+    cmd.hide("everything", "LINKED")
+    cmd.show("sticks", "LINKED")
+    cmd.set("stick_radius", 0.27, "LINKED")
+    color_by_element("LINKED", define("mf_partner_c", pc))
+    for c, i, _ in rec_res:
+        color_by_element(f"LINKED and {residue_sel(c, i)}", f"mf_chain_{c}")
+    if ctx.opt("metals", "off") == "on":
+        show_metals()
+    with open(f"{a.prefix}_covalent.txt", "w") as fh:
+        fh.write("partner_atom\treceptor_atom\tdistance_A\tbond_in_file\n")
+        for p, r, d, bonded in links:
+            fh.write(f"{p[0]}:{p[2]}{p[1]}:{p[3]}\t{r[0]}:{r[2]}{r[1]}:{r[3]}\t{d:.2f}\t{'yes' if bonded else 'no'}\n")
+
+    # labels at the end of each linked residue farthest from the bond, so the two sides do not
+    # overlap; their anchors are framed too (temporary pseudoatoms) so no label falls off the image
+    items = []
+    if ctx.labels_on(True):
+        center = cmd.get_coords(" or ".join(f"({BASE} and index {x[4]})" for p, r, _, _ in links for x in (p, r))).mean(0)
+        for res_list, color_of in ((par_res, lambda c: mix(pc, "black", 0.3)),
+                                   (rec_res, lambda c: mix(ctx.colors.get(c, (0, 0, 0)), "black", 0.2))):
+            for c, i, n in res_list:
+                xyz = cmd.get_coords(f"LINKED and {residue_sel(c, i)}")
+                tip = xyz[np.argmax(np.linalg.norm(xyz - center, axis=1))]
+                d = (tip - center) / (np.linalg.norm(tip - center) or 1.0)
+                text = residue_label_items([(c, i, n)], "LINKED", center, color_of)[0][0]
+                items.append((text, tip + 3.5 * d, color_of(c)))
+        for k, (_, pos, _) in enumerate(items):
+            cmd.pseudoatom("_mf_label_pts", pos=[float(v) for v in pos], name=f"L{k}")
+        frame_sel += " or _mf_label_pts"
+    # default clip: helices or strands in front of the link would hide it
+    view = ctx.view("site", frame_sel=frame_sel, margin=1.3, clip=a.clip if a.clip is not None else 6.0)
+    cmd.delete("_mf_label_pts")
+    if items:
+        add_labels("LABELS", items, R_of(view), label_size(view, 0.035), font=7, view=view)
     return view
 
 
@@ -398,7 +531,7 @@ def pocket(ctx):
     cmd.set("transparency", ctx.opt("surface_transparency", 0.1), "SURFACE")
     cmd.create("SITE_STICKS", f"byres (({ctx.site(a.site_cutoff)}) and ({BASE} in SURFACE))")
     cmd.hide("everything", "SITE_STICKS")
-    cmd.show("sticks", "SITE_STICKS and (sidechain or name CA)")
+    cmd.show("sticks", f"SITE_STICKS and {SIDECHAIN}")
     cmd.set("stick_radius", 0.28, "SITE_STICKS")
     for c in ctx.chains:
         cmd.color(f"mf_light_{c}", f"SURFACE and chain {c}")
@@ -437,7 +570,7 @@ def site_faded(ctx):
     if mut:
         cmd.create("MUT_STICKS", f"byres ({mut})")
         cmd.hide("everything", "MUT_STICKS")
-        cmd.show("sticks", "MUT_STICKS and (sidechain or name CA)")
+        cmd.show("sticks", f"MUT_STICKS and {SIDECHAIN}")
         cmd.show("spheres", "MUT_STICKS and sidechain")
         color_by_element("MUT_STICKS", define("mf_mut_c", (0.45, 0.72, 0.35)))
         cmd.set("sphere_color", define("mf_mut_sph", ctx.rgb("mutation_color", (0.3, 0.6, 0.95))), "MUT_STICKS")
@@ -521,7 +654,7 @@ def outline(ctx):
     if key:
         cmd.create("KEY", f"byres ({key}) and polymer")
         cmd.hide("everything", "KEY")
-        cmd.show("sticks", "KEY and (sidechain or name CA)")
+        cmd.show("sticks", f"KEY and {SIDECHAIN}")
         cmd.set("stick_radius", 0.22, "KEY")
         if iface and ctx.lig and not a.key_color:  # each side in a darker shade of its interface color
             color_by_element("KEY and not (KEY in PARTNER_MOL)", define("mf_key", mix(hl_c, "black", 0.2)))
@@ -702,7 +835,7 @@ def property_(ctx):
         cmd.color("grey80", "CARTOON and b = -999")
     key = ctx.sel("key")
     if key:
-        cmd.show("sticks", f"byres (CARTOON in ({key})) and (sidechain or name CA)")
+        cmd.show("sticks", f"byres (CARTOON in ({key})) and {SIDECHAIN}")
         cmd.util.cnc(f"byres (CARTOON in ({key}))")
     if ctx.kind == "small":
         show_partner(ctx, ctx.partner_rgb((0.1, 0.8, 0.85)), radius=0.22)
@@ -746,7 +879,7 @@ def plddt(ctx):
         cmd.color(define(f"mf_plddt_{i}", rgb_of(hexc)), sel)
     key = ctx.sel("key")
     if key:
-        cmd.show("sticks", f"byres (CARTOON in ({key})) and (sidechain or name CA)")
+        cmd.show("sticks", f"byres (CARTOON in ({key})) and {SIDECHAIN}")
         cmd.util.cnc(f"byres (CARTOON in ({key}))")
     if ctx.kind == "small":
         show_partner(ctx, ctx.partner_rgb((0.6, 0.6, 0.6)), radius=0.22)

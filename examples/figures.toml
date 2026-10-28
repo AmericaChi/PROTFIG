@@ -181,6 +181,13 @@ label_style = "chain"
 palette = "chimerax"
 hbond_color = "white"
 
+# --- rhodopsin: retinal covalently bound to Lys296 (Schiff base); the bond is read from the file
+[[figure]]
+input = "inputs/1U19.cif"
+preset = "covalent"
+name = "1U19"
+chains = "A"
+
 # --- reuse the view and selections from a previously generated .pse, with another style
 [[figure]]
 input = "figures/site/8G66/8G66.pse"

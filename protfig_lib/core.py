@@ -223,10 +223,12 @@ def _load_structure(src, name, fetch_dir="."):
 
 
 def clean(a, user, keep_lipids=False):
-    """Remove H, altlocs, water (unless --waters), additives, MD solvent/ions, lipids (unless
-    keep_lipids) and unrequested chains. Assign chain 'A' to chainless polymers (MD outputs)."""
-    cmd.remove(f"{BASE} and resn {'+'.join(r for r in JUNK_HET if r not in ('HOH', 'WAT', 'DOD'))}"
-               + _keep_partner(a, user))
+    """Remove H, altlocs, water (unless --waters), additives and MD solvent/ions (unless
+    --keep_het), lipids (unless keep_lipids) and unrequested chains. Assign chain 'A' to
+    chainless polymers (MD outputs)."""
+    if not getattr(a, "keep_het", False):
+        cmd.remove(f"{BASE} and resn {'+'.join(r for r in JUNK_HET if r not in ('HOH', 'WAT', 'DOD'))}"
+                   + _keep_partner(a, user))
     cmd.remove(f"{BASE} and hydro")
     cmd.remove(f"{BASE} and not alt ''+A")
     cmd.alter(BASE, "alt=''")

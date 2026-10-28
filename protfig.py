@@ -45,7 +45,7 @@ from pymol import cmd  # noqa: E402
 
 from protfig_lib import core  # noqa: E402
 from protfig_lib.core import ProtFigError  # noqa: E402
-from protfig_lib.presets import PRESETS, Ctx, show_glycans  # noqa: E402
+from protfig_lib.presets import PRESETS, Ctx, set_sidechain_mode, show_glycans, show_het, show_metals  # noqa: E402
 
 KIND_NAMES = {"small": "ligand", "peptide": "peptide", "protein": "protein"}
 ONOFF = ("on", "off")
@@ -84,6 +84,10 @@ def build_parser():
     g.add_argument("--highlight", help="region to highlight (outline); \"interface\" shades both sides of a protein-protein/peptide interface")
     g.add_argument("--key", help="key residues as sticks (outline, property)")
     g.add_argument("--mutation", help="mutated residue, as translucent spheres (site_faded)")
+    g.add_argument("--covalent_cutoff", type=float,
+                   help="covalent: max partner-receptor distance in Å for a bond missing from the file (default 2.0)")
+    g.add_argument("--interface_sticks", choices=ONOFF,
+                   help="covalent: other interface residues in sticks too (default off: cartoon)")
     g.add_argument("--focus", help="selection to place at the top in the automatic view")
     g.add_argument("--show_partner", choices=ONOFF, help="binding_surface: show the partner (default off)")
     g.add_argument("--partner_sticks", choices=ONOFF,
@@ -98,6 +102,12 @@ def build_parser():
     g.add_argument("--repr", choices=("cartoon", "surface"), default="cartoon", help="illustrative: cartoon or surface")
     g.add_argument("--glycans", choices=ONOFF, help="glycans (NAG, MAN...) as sticks (default off); cartoon and surface styles")
     g.add_argument("--waters", action="store_true", help="keep crystallographic waters (pastel shows them)")
+    g.add_argument("--keep_het", action="store_true",
+                   help="keep and show crystallization additives and ions (GOL, SO4, NA, CL...), removed by default")
+    g.add_argument("--nonstandard_sticks", choices=ONOFF,
+                   help="sticks also show side chains of non-standard residues (MSE, SEP, staples...); default off")
+    g.add_argument("--metals", choices=ONOFF,
+                   help="metal ions (ZN, MG, CA...) as spheres (default: on in site, off elsewhere)")
 
     g = p.add_argument_group("colors (PyMOL name, '#rrggbb' or 'r g b' from 0 to 1)")
     g.add_argument("--palette", choices=sorted(core.PALETTES), metavar="PALETTE",
@@ -115,6 +125,7 @@ def build_parser():
     g.add_argument("--ref_color", help="color of the --ref structure in superpose")
     g.add_argument("--mesh_color", help="density mesh color")
     g.add_argument("--glycan_color", help="glycan carbon color (default blue)")
+    g.add_argument("--het_color", help="--keep_het carbon color (default gray)")
     g.add_argument("--lipid_color", help="lipid carbon color")
     g.add_argument("--partner_surface", choices=ONOFF, help="site: blue ligand surface (default on)")
     g.add_argument("--partner_surface_color", help="site: ligand surface color")
@@ -310,6 +321,10 @@ def apply_background(a):
     return rgb
 
 
+def is_closeup(preset):
+    return preset in ("site", "site_faded", "pocket", "density", "interface_closeup")
+
+
 def run_one(argv):
     a = parse(argv)
     if a.list:
@@ -338,6 +353,7 @@ def run_one(argv):
               f"works with: {', '.join(KIND_NAMES[k] for k in meta['kinds'])}.")
 
     core.ASPECT = a.width / a.height
+    set_sidechain_mode(a.nonstandard_sticks == "on")
     ctx = Ctx(a, lig, kind, chains, user, session_view)
     view = meta["fn"](ctx)
     if a.glycans == "on":
@@ -346,6 +362,12 @@ def run_one(argv):
         else:
             print(f"WARNING: --glycans does not apply to style '{a.preset}' (only cartoon and surface styles: "
                   f"{', '.join(n for n, m in sorted(PRESETS.items()) if m['glycans'])}).")
+    # close-ups (site...) keep small spheres; whole-molecule views need them larger to be seen
+    scale = 0.35 if is_closeup(a.preset) else 1.2
+    if a.metals == "on" and "METAL_IONS" not in cmd.get_names("objects"):
+        show_metals(near=None, scale=scale)
+    if a.keep_het:
+        show_het(ctx, scale=scale)
 
     if a.outline == "on":
         if cmd.get_setting_int("ray_trace_mode") not in (1, 3):

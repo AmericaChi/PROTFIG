@@ -23,7 +23,8 @@ protfig <structure> --preset <preset> [options]
   `PATH`, run `PYMOL=/path/to/pymol ./protfig ...`.
 
 PROTFIG automatically removes hydrogens, waters, crystallization additives (glycerol, PEG,
-sulfate...) and simulation solvent and ions. Keep crystallographic waters with `--waters`.
+sulfate...) and simulation solvent and ions. Keep crystallographic waters with `--waters`, and
+additives and ions with `--keep_het`.
 
 `--chains B,C,A` keeps only those chains and sets the color order: the first chain gets the first
 color of the palette. Chain IDs are the author chain IDs (`auth` on the PDB website), which can
@@ -69,6 +70,7 @@ Colors accept PyMOL names (`salmon`), `#rrggbb` or `"r g b"` (0-1). Defaults dep
 | `--site`, `--site_cutoff`, `--pocket_cutoff` | site residues |
 | `--highlight "resi 1-140"`, `--key "resi 41+145"` | highlighted region and key residues (`outline`); key residues are added to those forming H-bonds |
 | `--highlight interface` | shade the interface on both sides of a protein-protein or peptide complex, with H-bond and `--key` residues of both sides in sticks (`outline`) |
+| `--covalent_cutoff 2.0`, `--interface_sticks on` | `covalent`: distance for a partner-receptor bond missing from the file (it is added); other interface residues in sticks |
 | `--mutation "resi 49"`, `--ref other.cif` | mutated residue; second structure (`site_faded`, `superpose`) |
 | `--map map.ccp4`, `--map_level 1.0` | electron density (`density`) |
 | `--values file.txt` | per-residue values, lines `chain resi value` (`property`) |
@@ -77,7 +79,10 @@ Colors accept PyMOL names (`salmon`), `#rrggbb` or `"r g b"` (0-1). Defaults dep
 | `--glycans on` | glycans as sticks (cartoon and surface presets) |
 | `--show_partner on` | show the partner in `binding_surface` |
 | `--partner_sticks off` | peptide or protein partner as cartoon only, without side-chain sticks |
+| `--nonstandard_sticks on` | sticks (`--key`, site, partner) also show side chains of non-standard residues (MSE, SEP, staples...), which PyMOL's `sidechain` selection skips |
 | `--waters` | keep crystallographic waters |
+| `--keep_het` | keep crystallization additives and ions (GOL, SO4, NA, CL...) and show them as gray sticks/spheres (`--het_color`) |
+| `--metals on\|off` | metal ions (ZN, MG, CA...) as spheres; default on in `site`, off elsewhere |
 
 **Colors**
 

@@ -42,6 +42,7 @@ quick preview.
 |---|---|
 | `site` | Binding site: residues, hydrogen bonds and labels |
 | `site_faded` | Site with distances in Å; mutations and a reference ligand |
+| `covalent` | Covalently bound ligand or peptide: the linked residues of both sides and the bond |
 | `pocket` | The ligand or peptide lying in its surface groove |
 | `interface_closeup` | Close-up of a protein-protein or peptide interface |
 | `binding_surface` | Binding footprint on the receptor surface |
