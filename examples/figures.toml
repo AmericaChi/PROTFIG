@@ -168,19 +168,6 @@ preset = "membrane"
 name = "3P0G"
 partner = "chain B"
 
-# --- user options: black background, serif font, large labels with chain
-[[figure]]
-input = "inputs/8G66.cif"
-preset = "site"
-name = "8G66_custom"
-chains = "B,C,A"
-bg = "black"
-font = "serif-bold"
-label_size = 1.3
-label_style = "chain"
-palette = "chimerax"
-hbond_color = "white"
-
 # --- rhodopsin: retinal covalently bound to Lys296 (Schiff base); the bond is read from the file
 [[figure]]
 input = "inputs/1U19.cif"
