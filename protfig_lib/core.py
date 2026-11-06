@@ -20,7 +20,7 @@ ONE_LETTER = {
     "ALA": "A", "ARG": "R", "ASN": "N", "ASP": "D", "CYS": "C", "GLN": "Q", "GLU": "E", "GLY": "G",
     "HIS": "H", "ILE": "I", "LEU": "L", "LYS": "K", "MET": "M", "PHE": "F", "PRO": "P", "SER": "S",
     "THR": "T", "TRP": "W", "TYR": "Y", "VAL": "V", "MSE": "M", "HSD": "H", "HSE": "H", "HSP": "H",
-    "HID": "H", "HIE": "H", "HIP": "H", "CYX": "C", "SEP": "S", "TPO": "T", "PTR": "Y",
+    "HID": "H", "HIE": "H", "HIP": "H", "CYX": "C", "SEP": "pS", "TPO": "pT", "PTR": "pY",
 }
 # crystallization / buffer additives and simulation solvent/ions (GROMACS, CHARMM, AMBER):
 # removed unless they are the chosen partner
@@ -28,6 +28,9 @@ JUNK_HET = ("DMS GOL EDO PEG PG4 PGE 1PE P6G SO4 PO4 ACT ACY FMT TRS EPE MES BME
             "SCN NH4 IMD CIT TLA MLI PGO BU3 DIO MRD SIN PEU 12P 15P P33 2PE 7PE XPE IOD BR CL NA K "
             "SOL TIP3 TIP4 TP3 T3P SPC WAT HOH DOD SOD CLA POT NA+ CL- K+").split()
 METALS = "ZN MG CA MN FE FE2 NI CU CO CD".split()
+WATERS = "HOH WAT DOD TIP3 TIP4 TP3 T3P SPC SOL".split()
+# terminal caps of peptides (acetyl, amide, N-methyl amide, formyl): part of the chain, never the partner
+CAPS = "ACE NH2 NME FOR".split()
 # lipids (CHARMM-GUI, MemProtMD, atomistic Martini...). Only the membrane preset keeps them.
 LIPIDS = ("DPP DPPC POPC POPE POPG POPS POPA DOPC DOPE DOPG DOPS DMPC DMPE DLPC DLPE DSPC PLPC "
           "SDPC SOPC CHL1 CHOL CLR CHS PSM SSM PIP2 PI2 SAPI POPI CDL CDL2 LMPG DPC LDA OLC").split()
@@ -86,6 +89,18 @@ BASE_SETTINGS = {
 
 # per-chain palettes (in --chains order)
 PALETTES = {
+    # lavender, then sage and nordic: violet, teal, forest green, terracotta, navy, plum
+    "lavender": [(0.357, 0.294, 0.604), (0.165, 0.616, 0.561), (0.247, 0.420, 0.306), (0.784, 0.333, 0.239),
+                 (0.169, 0.298, 0.494), (0.651, 0.302, 0.475), (0.50, 0.50, 0.50)],
+    # candy: pink and cyan; in site --style outline (45% lighter) exactly PyMOL lightpink and palecyan,
+    # the former interface_closeup colors
+    "candy": [(1.0, 0.545, 0.764), (0.636, 1.0, 1.0), (0.357, 0.294, 0.604), (0.247, 0.420, 0.306),
+              (0.169, 0.298, 0.494), (0.784, 0.333, 0.239), (0.50, 0.50, 0.50)],
+    # nordic (navy, plum) and sage (forest green, terracotta) first, then the other pairs
+    "nordic": [(0.169, 0.298, 0.494), (0.651, 0.302, 0.475), (0.357, 0.294, 0.604), (0.165, 0.616, 0.561),
+               (0.247, 0.420, 0.306), (0.784, 0.333, 0.239), (0.50, 0.50, 0.50)],
+    "sage": [(0.247, 0.420, 0.306), (0.784, 0.333, 0.239), (0.357, 0.294, 0.604), (0.165, 0.616, 0.561),
+             (0.169, 0.298, 0.494), (0.651, 0.302, 0.475), (0.50, 0.50, 0.50)],
     "vivid": [(0.18, 0.82, 0.18), (0.62, 0.05, 0.62), (0.07, 0.12, 0.85), (0.95, 0.55, 0.10),
               (0.10, 0.70, 0.80), (0.85, 0.20, 0.20), (0.95, 0.85, 0.15), (0.50, 0.50, 0.50)],
     # soft ChimeraX-style tones (sage green, teal, pink, sky blue, sand)
@@ -128,6 +143,15 @@ def mix(c, other, t):
 def define(name, c):
     cmd.set_color(name, list(rgb_of(c)))
     return name
+
+
+def readable(c, max_luminance=0.42):
+    """A text color from c, darkened until it reads on a white background (light palette colors
+    such as pale cyan would give faint labels)."""
+    c = rgb_of(c)
+    while 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] > max_luminance:
+        c = mix(c, "black", 0.12)
+    return c
 
 
 def color_by_element(sel, carbon):
@@ -227,7 +251,8 @@ def clean(a, user, keep_lipids=False):
     --keep_het), lipids (unless keep_lipids) and unrequested chains. Assign chain 'A' to
     chainless polymers (MD outputs)."""
     if not getattr(a, "keep_het", False):
-        cmd.remove(f"{BASE} and resn {'+'.join(r for r in JUNK_HET if r not in ('HOH', 'WAT', 'DOD'))}"
+        keep = WATERS if a.waters else ("HOH", "WAT", "DOD")  # --waters also keeps MD waters (TIP3, SOL...)
+        cmd.remove(f"{BASE} and resn {'+'.join(r for r in JUNK_HET if r not in keep)}"
                    + _keep_partner(a, user))
     cmd.remove(f"{BASE} and hydro")
     cmd.remove(f"{BASE} and not alt ''+A")
@@ -308,7 +333,7 @@ def find_partner(a, user, mode="required"):
         sel = None
         counts = {}
         extra = f" and chain {a.partner_chain}" if a.partner_chain else ""
-        skip = "+".join(JUNK_HET + LIPIDS + GLYCANS)
+        skip = "+".join(JUNK_HET + LIPIDS + GLYCANS + CAPS)
         cmd.iterate(f"{BASE} and organic and not resn {skip}{extra}",
                     "counts[(chain, resi, resn)] = counts.get((chain, resi, resn), 0) + 1",
                     space={"counts": counts})
@@ -385,13 +410,41 @@ def adjust(R, a):
     return R
 
 
+def unoccluded_R(R, group_xyz, env_xyz, radius=2.5, prefer="face"):
+    """Turn R (about the camera's vertical axis, and up to ±15° about the horizontal one) so that
+    group_xyz, buried inside the protein (a chromophore in its barrel, retinal among helices), is seen
+    through a gap rather than behind a strand: among the turns that hide the fewest group atoms behind
+    env atoms (+10% of the group), the one that shows the group most face-on, then the smallest turn.
+    (Inside a closed barrel every turn hides it equally, so the face-on view wins.)"""
+    cands = []
+    for tilt in (0, -15, 15):
+        for ang in range(0, 360, 10):
+            M = R
+            for ax, deg in (("y", ang), ("x", tilt)):
+                t = math.radians(deg)
+                c, s = math.cos(t), math.sin(t)
+                M = np.array({"x": [[1, 0, 0], [0, c, -s], [0, s, c]],
+                              "y": [[c, 0, s], [0, 1, 0], [-s, 0, c]]}[ax]) @ M
+            g, e = group_xyz @ M.T, env_xyz @ M.T
+            dxy = np.linalg.norm(e[:, None, :2] - g[None, :, :2], axis=2)
+            front = e[:, None, 2] > g[None, :, 2]
+            hidden = int(np.any((dxy < radius) & front, axis=0).sum())  # group atoms with env in front
+            area = float(np.sqrt(max(np.linalg.det(np.cov(g[:, :2].T)), 0.0))) if len(g) > 2 else 0.0
+            cands.append((hidden, area, min(ang, 360 - ang) + 2 * abs(tilt), M))
+    best = min(c[0] for c in cands)
+    ok = [c for c in cands if c[0] <= best + max(1, len(group_xyz) // 10)]
+    if prefer == "turn":  # keep the view closest to the automatic one (close-ups: site)
+        return min(ok, key=lambda c: c[2])[3]
+    return max(ok, key=lambda c: (round(c[1], 1), -c[2]))[3]
+
+
 def frame(R, center, frame_xyz, aspect, margin=1.06, front_z=None, fit_box=False):
     """PyMOL view with rotation R (rows = camera axes), centered on center, framing frame_xyz.
 
     front_z: if given, front clipping plane at that camera z coordinate (relative to center);
     anything closer to the camera is clipped (to look inside a pocket).
     fit_box: center on the on-screen bounding box instead (long flexible tails no longer push
-    the molecule off-center).
+    the molecule off-center) and fit it exactly in perspective, so it fills the image.
     """
     cam = (frame_xyz - center) @ R.T
     if fit_box:
@@ -403,6 +456,9 @@ def frame(R, center, frame_xyz, aspect, margin=1.06, front_z=None, fit_box=False
     zmax = np.max(cam[:, 2]) if front_z is None else min(front_z, np.max(cam[:, 2]))
     need = max(np.max(np.abs(cam[:, 1])), np.max(np.abs(cam[:, 0])) / aspect)
     dist = margin * need / math.tan(half) + zmax
+    if fit_box:  # exact perspective fit: deeper atoms look smaller, so less margin is needed
+        each = np.maximum(np.abs(cam[:, 1]), np.abs(cam[:, 0]) / aspect)
+        dist = float(np.max(cam[:, 2] + margin * each / math.tan(half)))
     front = max(1.0, dist - (front_z if front_z is not None else np.max(cam[:, 2]) + 5))
     back = dist - np.min(cam[:, 2]) + 5
     return tuple(R.T.flatten().tolist()) + (0.0, 0.0, -float(dist)) + tuple(center.tolist()) + (front, back, -20.0)
@@ -470,6 +526,22 @@ def site_R(lig, env_sel, aspect, up_sel=None, side=False):
     if ups is not None and np.dot(ups.mean(0) - lc, up) < 0:
         up = -up
     return lc, _rot(z, up)
+
+
+def front_R(front_sel, back_sel):
+    """Camera on the side of front_sel (a bound peptide/protein) so it lies in front of back_sel
+    (the receptor), with front_sel running left to right (N- to C-terminus) across the image."""
+    F, B = cmd.get_coords(front_sel), cmd.get_coords(back_sel)
+    c = np.vstack([F, B]).mean(axis=0)
+    z = F.mean(axis=0) - B.mean(axis=0)
+    z /= np.linalg.norm(z)
+    ca = cmd.get_coords(f"({front_sel}) and name CA")
+    x = (ca[-1] - ca[0]) if ca is not None and len(ca) >= 2 else _pca(F)[1][:, 0]
+    x = x - np.dot(x, z) * z
+    if np.linalg.norm(x) < 1e-3:
+        x = _pca(B)[1][:, 0] - np.dot(_pca(B)[1][:, 0], z) * z
+    x /= np.linalg.norm(x)
+    return c, _rot(z, np.cross(z, x))
 
 
 def facing_R(rec_sel, pocket_sel, aspect, up_sel=None):
@@ -575,6 +647,15 @@ LABEL_FORMATS = {"one": "{one}{resi}", "three": "{resn}{resi}", "chain": "{chain
 
 # negative label_size = height in Å, but the visible capital-letter height is ~1/3 of that
 LABEL_SCALE = 2.6
+# label text size in points on the printed image; presets give sizes relative to LABEL_FRAC (e.g. chain
+# names at 0.05 -> 1.67 x LABEL_PT). IMAGE: final image (set by protfig.py; scale < 1 for --draft).
+LABEL_PT = 14.0
+LABEL_FRAC = 0.03
+IMAGE = {"height": None, "dpi": 300, "scale": 1.0}
+# PyMOL draws ray-traced labels at a fixed pixel size, whatever the image size or dpi (measured):
+# cap height in px = LABEL_CAP_PX * label_size / visible height at the label's depth (both in Å)
+LABEL_CAP_PX = 352.6
+CAP_EM = 0.716  # cap height / font size of the sans-bold label font
 # SVG font-size per Å of label_size (calibrated against the PyMOL render)
 SVG_EM = 0.5
 
@@ -596,17 +677,34 @@ def add_labels(obj, items, R, size, font=7, outline=None, view=None, avoid=None,
         # dark background: the preset's dark label colors are lightened so they stay readable
         items = [(t, p, mix(c, "white", 0.75) if sum(rgb_of(c)) / 3 < 0.45 else c) for t, p, c in items]
     P = np.array([it[1] for it in items], dtype=float)
-    if view is not None and avoid is not None:
-        avoid = avoid - np.array(view[12:15])  # same relative coords as P below
-    origin0 = np.array(view[12:15]) if view is not None else np.zeros(3)
-    P = _declutter(P - origin0, [it[0] for it in items], R, size, avoid=avoid) + origin0
-    if view is not None:
+    texts = [it[0] for it in items]
+    if view is None:
+        P = _declutter(P, texts, R, size, avoid=avoid)
+    else:
         dist, origin = -view[11], np.array(view[12:15])
-        cam = (P - origin) @ R.T
         # label_position pushes the text 3 Å further toward the camera: leave a margin to the clipping plane
         zl = dist - view[15] - 4.2
-        cam[:, :2] *= ((dist - zl) / (dist - cam[:, 2]))[:, None]
-        cam[:, 2] = zl
+        pymol_size = None
+        if IMAGE["height"]:
+            # the preset's size (a fraction of the view height) -> LABEL_PT points on the printed image,
+            # whatever the zoom or the image size
+            tan_h = math.tan(math.radians(cmd.get_setting_float("field_of_view") / 2.0))
+            rel = size / (LABEL_FRAC * 2.0 * dist * tan_h)
+            cap_px = LABEL_PT * rel * IMAGE["dpi"] / 72.0 * CAP_EM * IMAGE["scale"]
+            vis = 2.0 * (dist - zl - 3.0) * tan_h  # visible height where the text is drawn (label_position)
+            pymol_size = cap_px * vis / LABEL_CAP_PX
+            size = cap_px / CAP_EM / IMAGE["height"] * vis  # font size in Å, for the overlap boxes
+
+        def to_label_plane(X):  # perspective projection onto the plane where the labels are drawn
+            cam = (X - origin) @ R.T
+            cam[:, :2] *= ((dist - zl) / (dist - cam[:, 2]))[:, None]
+            cam[:, 2] = zl
+            return cam
+
+        # separate the labels where they are drawn: labels apart in 3D but at different depths
+        # can land on the same spot of the image
+        cam = _declutter(to_label_plane(P), texts, np.eye(3), size,
+                         avoid=to_label_plane(avoid) if avoid is not None and len(avoid) else None)
         # inside the frame: the text (centered on the point) must not spill over the edges
         half_h = (dist - zl) * math.tan(math.radians(cmd.get_setting_float("field_of_view") / 2.0))
         half_w = half_h * (aspect or ASPECT)
@@ -621,7 +719,7 @@ def add_labels(obj, items, R, size, font=7, outline=None, view=None, avoid=None,
         cmd.set("label_color", cname, f"{obj} and name {name}")
     cmd.hide("everything", obj)
     cmd.show("labels", obj)
-    cmd.set("label_size", -size * LABEL_SCALE, obj)
+    cmd.set("label_size", -(pymol_size if view is not None and pymol_size else size * LABEL_SCALE), obj)
     cmd.set("label_font_id", font, obj)
     if outline:
         cmd.set("label_outline_color", outline, obj)
@@ -658,7 +756,8 @@ def labels_svg(path, objs, width, height, dpi, halo_rgb=None, halo_px=0):
             depth = -cam[2]
             px = (cam[0] / (depth * tan_h * aspect) + 1) / 2 * width
             py = (1 - cam[1] / (depth * tan_h)) / 2 * height
-            fs = size / (2 * depth * tan_h) * height * SVG_EM
+            # same text size as the PNG: PyMOL's fixed-pixel label size, drawn 3 Å closer (label_position)
+            fs = LABEL_CAP_PX * size / (2 * (depth - 3.0) * tan_h) / CAP_EM
             rgb = cmd.get_color_tuple(col) if isinstance(col, int) and col >= 0 else \
                 cmd.get_color_tuple(cmd.get_color_index(cmd.get_setting_text("label_color", obj)) or 0)
             out.append((text, px, py, fs, rgb, font))

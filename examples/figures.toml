@@ -5,15 +5,15 @@
 [defaults]
 out = "figures"
 
-# --- protein + ligand: CRBN–DDB1–CK1α with the molecular glue SJ3149 (8G66)
+# --- protein + protein: SARS-CoV-2 spike RBD bound to ACE2, with glycans (6M0J)
 [[figure]]
-input = "inputs/8G66.cif"
+input = "inputs/6M0J.cif"
 preset = "overview"
-name = "8G66"
-chains = "B,C,A"
-chain_names = "B:CRBN,C:CK1α,A:DDB1"
-partner_name = "SJ3149"
+name = "6M0J"
+chain_names = "A:ACE2,E:RBD"
+glycans = "on"
 
+# --- protein + ligand: CRBN–DDB1–CK1α with the molecular glue SJ3149 (8G66)
 [[figure]]
 input = "inputs/8G66.cif"
 preset = "site"
@@ -29,17 +29,20 @@ chains = "B,C,A"
 # --- SARS-CoV-2 Mpro with ensitrelvir: WT (8DZ0) and M49I mutant (8DZ1)
 [[figure]]
 input = "inputs/8DZ0.cif"
-preset = "site_faded"
-name = "8DZ0"
+preset = "site"
+style = "faded"
+name = "8DZ0_faded"
 chains = "A,B"
 
 [[figure]]
 input = "inputs/8DZ1.cif"
-preset = "site_faded"
-name = "8DZ1_M49I"
+preset = "site"
+style = "faded"
+name = "8DZ1_M49I_faded"
 chains = "A,B"
 ref = "inputs/8DZ0.cif"
 mutation = "chain A and resi 49"
+mutation_original = "on"
 
 [[figure]]
 input = "inputs/8DZ0.cif"
@@ -50,28 +53,40 @@ map = "inputs/8dz0_2fofc.ccp4"
 
 [[figure]]
 input = "inputs/8DZ0.cif"
-preset = "outline"
-name = "8DZ0"
+preset = "overview"
+style = "outline"
+name = "8DZ0_outline"
 chains = "A"
 highlight = "resi 200-306"
 
+# --- outline, comic style: protein in white, peptide in green, facing the camera (4HT6)
 [[figure]]
-input = "inputs/8DZ0.cif"
-preset = "illustrative"
-name = "8DZ0"
+input = "inputs/4HT6.cif"
+preset = "overview"
+style = "comic"
+name = "4HT6_comic"
 chains = "A,B"
 
 [[figure]]
 input = "inputs/8DZ0.cif"
-preset = "illustrative"
-name = "8DZ0_surface"
+preset = "overview"
+style = "illustrative"
+name = "8DZ0_illustrative"
+chains = "A,B"
+
+[[figure]]
+input = "inputs/8DZ0.cif"
+preset = "overview"
+style = "illustrative"
+name = "8DZ0_illustrative_surface"
 chains = "A"
 repr = "surface"
 
 [[figure]]
 input = "inputs/8DZ0.cif"
-preset = "pastel"
-name = "8DZ0"
+preset = "overview"
+style = "pastel"
+name = "8DZ0_pastel"
 chains = "A,B"
 
 [[figure]]
@@ -116,13 +131,14 @@ palette = "chimerax"
 
 [[figure]]
 input = "inputs/1YCR.cif"
-preset = "binding_surface"
+preset = "footprint"
 name = "1YCR"
 
 [[figure]]
 input = "inputs/1YCR.cif"
-preset = "interface_closeup"
-name = "1YCR"
+preset = "site"
+style = "outline"
+name = "1YCR_outline"
 
 [[figure]]
 input = "inputs/1YCR.cif"
@@ -132,10 +148,10 @@ name = "1YCR"
 # --- protein + protein: barnase–barstar (1BRS, chains A and D)
 [[figure]]
 input = "inputs/1BRS.cif"
-preset = "interface_closeup"
-name = "1BRS"
+preset = "site"
+style = "outline"
+name = "1BRS_outline"
 chains = "A,D"
-labels = "on"
 
 [[figure]]
 input = "inputs/1BRS.cif"
@@ -145,38 +161,56 @@ chains = "A,D"
 
 [[figure]]
 input = "inputs/1BRS.cif"
-preset = "illustrative"
-name = "1BRS"
+preset = "overview"
+style = "illustrative"
+name = "1BRS_illustrative"
 chains = "A,D"
 
 [[figure]]
 input = "inputs/1BRS.cif"
-preset = "binding_surface"
+preset = "footprint"
 name = "1BRS"
 chains = "A,D"
 
 # --- oligomeric assembly (9P3Y)
 [[figure]]
 input = "inputs/9P3Y.cif"
-preset = "oligomer"
-name = "9P3Y"
+preset = "overview"
+style = "assembly"
+name = "9P3Y_assembly"
 
-# --- membrane protein: β2-adrenergic receptor in DPPC + nanobody (3P0G)
+# --- membrane protein: opsin in an SDPC bilayer with its water (one frame of an MD simulation)
 [[figure]]
-input = "inputs/3P0G_membrane_nanobody.pdb"
+input = "data/opsin_membrane_md_frame.pdb"
 preset = "membrane"
-name = "3P0G"
-partner = "chain B"
+name = "opsin_md"
+waters = true
+water_layer = "all"
+colors = "A:#3FAF5F"
 
-# --- rhodopsin: retinal covalently bound to Lys296 (Schiff base); the bond is read from the file
+# --- rhodopsin: retinal covalently bound to Lys296 (Schiff base); the bond is read from the file.
+# Whole protein (covalent) and the link close up (site detects it)
 [[figure]]
 input = "inputs/1U19.cif"
 preset = "covalent"
 name = "1U19"
 chains = "A"
 
+[[figure]]
+input = "inputs/1U19.cif"
+preset = "site"
+name = "1U19_retinal"
+chains = "A"
+
+# --- GFP: chromophore built into the chain (residues 65-67)
+[[figure]]
+input = "inputs/1EMA.cif"
+preset = "covalent"
+name = "1EMA"
+
 # --- reuse the view and selections from a previously generated .pse, with another style
 [[figure]]
 input = "figures/site/8G66/8G66.pse"
-preset = "site_faded"
-name = "8G66_from_site_pse"
+preset = "site"
+style = "faded"
+name = "8G66_from_site_pse_faded"

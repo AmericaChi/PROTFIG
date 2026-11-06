@@ -1,0 +1,4 @@
+preset,id,type,description,options,status,partner_expected,partner_detected,partner_ok,chains_shown,n_hbonds,auto_errors,auto_error_notes,time_median_s,time_min_s,time_max_s,setup_s,render_s,runs
+plddt,AF-Q8I660,-,AlphaFold DB model (CC BY 4.0): RING-type E3 ubiquitin ligase,,ok,-,-,,A,0,0,,3.4,3.4,3.5,0.5,2.5,3
+plddt,AF-Q8IDF4,-,AlphaFold DB model (CC BY 4.0): uncharacterized protein,,ok,-,-,,A,0,0,,3.4,3.2,3.4,0.6,2.3,3
+plddt,AF-Q8IID0,-,AlphaFold DB model (CC BY 4.0): RING zinc finger protein,,ok,-,-,,A,0,0,,5.7,5.5,5.9,0.9,4.4,3

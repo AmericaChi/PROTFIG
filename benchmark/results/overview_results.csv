@@ -1,0 +1,4 @@
+preset,id,type,description,options,status,partner_expected,partner_detected,partner_ok,chains_shown,n_hbonds,auto_errors,auto_error_notes,time_median_s,time_min_s,time_max_s,setup_s,render_s,runs
+overview,1IGT,-,intact IgG antibody (4 chains + glycans),,ok,-,-,,"A,B,C,D",0,0,,47.5,46.1,48.0,0.1,45.4,3
+overview,1BL8,-,KcsA potassium channel tetramer,,ok,-,-,,"A,B,C,D",0,0,,20.7,20.7,20.8,0.0,20.2,3
+overview,1AO6,-,human serum albumin,,ok,-,-,,"A,B",0,0,,72.4,71.7,72.9,0.1,72.4,3

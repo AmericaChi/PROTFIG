@@ -1,0 +1,4 @@
+preset,id,type,description,options,status,partner_expected,partner_detected,partner_ok,chains_shown,n_hbonds,auto_errors,auto_error_notes,time_median_s,time_min_s,time_max_s,setup_s,render_s,runs
+electrostatic,1HVR,ligand,HIV-1 protease - cyclic urea inhibitor,,ok,resn XK2,ligand XK2 A:263,yes,"A,B",0,0,,28.5,28.4,28.5,0.7,27.3,3
+electrostatic,1FKF,ligand,FKBP12 - FK506,,ok,resn FK5,ligand FK5 A:108,yes,A,0,0,,16.7,16.5,16.7,0.6,15.7,3
+electrostatic,5C1M,ligand,mu-opioid receptor - BU72 (nanobody and lipids),,ok,resn VF1,ligand VF1 A:407,yes,"A,B",0,0,,53.0,52.6,53.2,0.8,51.5,3

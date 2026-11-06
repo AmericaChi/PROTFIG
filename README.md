@@ -25,8 +25,8 @@ Add the `PROTFIG` folder to your `PATH` to call `protfig` from anywhere.
 
 ```sh
 protfig 8G66 --preset site --chains B,C,A                # ligand binding site (downloads 8G66)
-protfig 1BRS --preset interface_closeup --chains A,D     # protein-protein interface
-protfig my_protein.pdb --preset illustrative --bg transparent
+protfig 1BRS --preset site --chains A,D                  # protein-protein interface
+protfig my_protein.pdb --preset overview --style illustrative --bg transparent
 protfig --list                                           # all presets
 protfig --help                                           # all options
 ```
@@ -38,29 +38,47 @@ quick preview.
 
 ## Presets
 
+13 presets with 19 styles, in three groups. Choose a preset with `--preset` and a style with
+`--style`; any preset that colors by chain also takes a palette (`--palette lavender`, `nordic`,
+`sage`, `candy`, `vivid`...).
+
+**Local: the binding site or interface, close up**
+
+| Preset | Styles | Shows |
+|---|---|---|
+| `site` | default, `faded`, `outline` | Site residues, hydrogen bonds and labels on both sides. `faded`: gray protein, colored sticks; `outline`: pastel with a black outline. Detects covalent partners (retinal–Lys, drug–Cys, GFP chromophore) |
+| `pocket` | | The ligand or peptide lying in its surface groove |
+| `footprint` | | Footprint of the partner on the receptor surface |
+| `density` | | Site with the electron-density mesh (`--map`) |
+
+**Global: the whole molecule**
+
+| Preset | Styles | Shows |
+|---|---|---|
+| `overview` | default, `outline`, `comic`, `illustrative`, `pastel`, `assembly` | Cartoon + translucent surface per chain; outlined cartoon with a highlighted region; white cartoon with the partner in front; flat illustration; N→C gradient; oligomer surface seen from the side |
+| `profile` | | Side view: receptor surface with the peptide or protein partner on top |
+| `superpose` | | Two superposed structures, with the RMSD (`--ref`) |
+| `membrane` | | Membrane protein in its lipid bilayer (MD frame), with its water (`--waters`) |
+| `covalent` | | Whole protein with a group bound to it or built into it (GFP chromophore, retinal) |
+
+**Colored by a property**
+
 | Preset | Shows |
 |---|---|
-| `site` | Binding site: residues, hydrogen bonds and labels |
-| `site_faded` | Site with distances in Å; mutations and a reference ligand |
-| `covalent` | Covalently bound ligand or peptide: the linked residues of both sides and the bond |
-| `pocket` | The ligand or peptide lying in its surface groove |
-| `interface_closeup` | Close-up of a protein-protein or peptide interface |
-| `binding_surface` | Binding footprint on the receptor surface |
-| `profile` | Side view: receptor surface with the peptide or protein partner on top |
-| `density` | Site with the electron-density mesh |
-| `overview` | Whole complex, colored by chain |
-| `outline` | Cartoon with outline, highlighted region and key residues |
-| `illustrative` | Flat illustration style (cartoon or surface) |
-| `pastel` | Pastel cartoon with an N→C gradient |
-| `oligomer` | Assembly as a surface, one shade per chain |
-| `membrane` | Membrane protein inside its lipid bilayer |
 | `electrostatic` | Surface colored by electrostatic potential |
 | `lipophilic` | Surface colored by lipophilicity |
 | `property` | Cartoon colored by B-factor or your own per-residue values |
 | `plddt` | AlphaFold model colored by confidence (pLDDT), AlphaFold Database colors |
-| `superpose` | Two superposed structures, with RMSD |
 
-There is a thumbnail of every preset in [`docs/presets/`](docs/presets).
+Mutations (`--mutation`) can be highlighted in any preset. There is a thumbnail of every preset and
+style in [`docs/presets/`](docs/presets). Names used by earlier versions (`site_faded`,
+`interface_closeup`, `binding_surface`, `outline`, `illustrative`, `pastel`, `oligomer`) still work.
+
+## Benchmark
+
+[`benchmark/`](benchmark) runs every preset on PDB entries used nowhere else in PROTFIG and reports
+failures and the time per figure ([`benchmark/results/summary.csv`](benchmark/results/summary.csv)).
+See [`benchmark/README.md`](benchmark/README.md) to reproduce it.
 
 ## Documentation
 

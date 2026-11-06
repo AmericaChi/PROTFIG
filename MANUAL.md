@@ -54,8 +54,8 @@ protfig complex.pdb --preset site --partner_chain B      # automatic search, onl
 **Site residues** are the receptor residues with any heavy atom within `--site_cutoff` (default
 4 Å) of the partner. Residues hydrogen-bonded to the partner are always included. For protein
 partners, the same cutoff selects the partner side of the interface; peptides are shown in full.
-`binding_surface` uses a wider cutoff, `--pocket_cutoff` (default 8 Å), so that the footprint is a
-continuous patch. You can also give the site by hand with `--site "resi 41+145+166"`.
+`footprint` uses its own cutoff, `--pocket_cutoff` (default 4.5 Å; raise it,
+e.g. to 6, for a more continuous patch). You can also give the site by hand with `--site "resi 41+145+166"`.
 
 ## 3. Options
 
@@ -68,16 +68,23 @@ Colors accept PyMOL names (`salmon`), `#rrggbb` or `"r g b"` (0-1). Defaults dep
 | `--chains B,C,A` | chains to keep and their color order |
 | `--partner`, `--partner_chain` | choose the binding partner |
 | `--site`, `--site_cutoff`, `--pocket_cutoff` | site residues |
-| `--highlight "resi 1-140"`, `--key "resi 41+145"` | highlighted region and key residues (`outline`); key residues are added to those forming H-bonds |
+| `--highlight "resi 1-140"`, `--key "resi 41+145"` | highlighted region and key residues (`overview`, every style); key residues are added to those forming H-bonds |
 | `--highlight interface` | shade the interface on both sides of a protein-protein or peptide complex, with H-bond and `--key` residues of both sides in sticks (`outline`) |
-| `--covalent_cutoff 2.0`, `--interface_sticks on` | `covalent`: distance for a partner-receptor bond missing from the file (it is added); other interface residues in sticks |
-| `--mutation "resi 49"`, `--ref other.cif` | mutated residue; second structure (`site_faded`, `superpose`) |
+| `--style outline` | `site`: illustration look, opaque pastel cartoon and sticks with a black outline (pink/cyan with `--palette candy`) |
+| `--style faded` | `site`: protein as a ghost-gray cartoon, only the sticks in the palette colors; labels on the H-bonded residues |
+| `--style outline/comic/illustrative/pastel/assembly` | `overview`: outlined cartoon / white cartoon with a green partner in front / flat illustration / N→C gradient / assembly surface seen from the side. The old presets `outline`, `illustrative`, `pastel` and `oligomer` still work as names for these styles |
+| `--style comic` | `overview`: white cartoon, peptide/protein partner as a green cartoon facing the camera, no sticks or H-bonds; only the chains touching the partner unless `--chains` is given |
+| `--covalent_cutoff 2.0` | `site`, `covalent`: distance for a partner-receptor bond missing from the file (it is added). `site` detects covalent partners by itself: the bond to the residue is drawn and the residue labeled; for a group built into the chain (GFP chromophore) its chain neighbors are left out |
+| `--mutation "resi 49"` | mutated residue(s) as sticks in translucent spheres, labeled (any style) |
+| `--mutation_original on` | with `--ref` (the wild type): also the original residue, in dark gray; label like `M49I` |
+| `--ref other.cif` | second structure, a file or a PDB code (`site`: its ligand as a ghost; `superpose`; `--mutation_original`) |
+| `--ref_chains A` | `superpose`: chains of `--ref` to align and draw (default: all) |
 | `--map map.ccp4`, `--map_level 1.0` | electron density (`density`) |
 | `--values file.txt` | per-residue values, lines `chain resi value` (`property`) |
 | `--prop_label`, `--prop_range`, `--prop_ticks` | color bar title, scale range and end labels (`property`; `--prop_label` also in `plddt`) |
 | `--region site\|all` | site or whole molecule (`electrostatic`, `lipophilic`) |
 | `--glycans on` | glycans as sticks (cartoon and surface presets) |
-| `--show_partner on` | show the partner in `binding_surface` |
+| `--show_partner on` | show the partner in `footprint` |
 | `--partner_sticks off` | peptide or protein partner as cartoon only, without side-chain sticks |
 | `--nonstandard_sticks on` | sticks (`--key`, site, partner) also show side chains of non-standard residues (MSE, SEP, staples...), which PyMOL's `sidechain` selection skips |
 | `--waters` | keep crystallographic waters |
@@ -88,7 +95,7 @@ Colors accept PyMOL names (`salmon`), `#rrggbb` or `"r g b"` (0-1). Defaults dep
 
 | Option | Effect |
 |---|---|
-| `--palette` | `vivid`, `chimerax`, `muted`, `pastel`, `illustrative`, `grays`, `membrane` |
+| `--palette` | `lavender`, `nordic`, `sage`, `candy`, `vivid`, `chimerax`, `muted`, `pastel`, `illustrative`, `grays`, `membrane` |
 | `--colors "A:salmon;B:#88cc44"` | color of specific chains |
 | `--partner_color`, `--receptor_color`, `--site_color`, `--hbond_color` | main elements |
 | `--highlight_color`, `--partner_highlight_color`, `--key_color`, `--mutation_color`, `--glycan_color`, `--lipid_color`, `--mesh_color`, `--ref_color` | preset-specific elements |
@@ -108,7 +115,7 @@ Colors accept PyMOL names (`salmon`), `#rrggbb` or `"r g b"` (0-1). Defaults dep
 | `--label_sel "resi 41+145"` | label only these residues |
 | `--chain_names "A:Kinase,B:Inhibitor"`, `--partner_name` | names drawn in `overview` |
 | `--hbonds on\|off`, `--hbond_cutoff 3.5`, `--hbond_mode geometric\|distance` | hydrogen bonds |
-| `--distances on\|off` | distances in Å (`site_faded`) |
+| `--distances on\|off` | H-bond lengths in Å (`site`; default off) |
 
 **Camera and image**
 
@@ -135,7 +142,7 @@ they apply, the selections `partner` and `site`.
 
 ```sh
 protfig figures/site/8G66/8G66.pse --preset site          # same figure, your view
-protfig figures/site/8G66/8G66.pse --preset site_faded    # another preset, same view
+protfig figures/site/8G66/8G66.pse --preset site --style faded   # another look, same view
 ```
 
 The saved view, selections and chain colors are kept. Your own `.pse` made from scratch works too.
@@ -156,7 +163,8 @@ chains = "B,C,A"
 
 [[figure]]
 input = "inputs/1BRS.cif"
-preset = "interface_closeup"
+preset = "site"
+style = "outline"
 chains = "A,D"
 ```
 
@@ -204,7 +212,10 @@ pymol -cq tools/embed_in_membrane.py -- 6xox_dppc.pdb 6XOX.cif 6XOX_in_membrane.
 protfig 6XOX_in_membrane.pdb --preset membrane --partner "chain A+B+G+N"
 ```
 
-The membrane protein is drawn as spheres; a partner given with `--partner` is drawn as cartoon.
+The membrane protein is drawn as cartoon (`--repr spheres` or `--repr surface` to change it); a partner given with `--partner` is drawn as cartoon.
+With `--waters`, the water of an MD frame is drawn as a translucent pale-blue surface on both faces
+of the bilayer: a 10 Å layer by default, `--water_layer 20` for a thicker one or `--water_layer all` for
+the whole box (`--water_color` to change the color).
 
 ## 8. Notes and limitations
 

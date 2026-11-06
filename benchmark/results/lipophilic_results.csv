@@ -1,0 +1,4 @@
+preset,id,type,description,options,status,partner_expected,partner_detected,partner_ok,chains_shown,n_hbonds,auto_errors,auto_error_notes,time_median_s,time_min_s,time_max_s,setup_s,render_s,runs
+lipophilic,4DJH,ligand,kappa-opioid receptor - JDTic,,ok,resn JDC,ligand JDC A:1300,yes,"A,B",0,0,,69.0,68.9,69.1,11.4,57.2,3
+lipophilic,2HYY,ligand,Abl kinase - imatinib (4 copies),,ok,resn STI,ligand STI A:600,yes,"A,B,C,D",0,0,,56.3,56.1,56.3,12.2,43.4,3
+lipophilic,2AM9,ligand,androgen receptor - testosterone,,ok,resn TES,ligand TES A:1000,yes,A,0,0,,33.6,33.4,33.7,3.4,29.9,3

@@ -1,0 +1,4 @@
+preset,id,type,description,options,status,partner_expected,partner_detected,partner_ok,chains_shown,n_hbonds,auto_errors,auto_error_notes,time_median_s,time_min_s,time_max_s,setup_s,render_s,runs
+superpose,4AKE,-,adenylate kinase: open (4AKE) vs closed (1AKE),--ref {in}/1AKE.cif,ok,-,-,,"A,B",0,0,,17.3,17.1,17.6,0.1,16.7,3
+superpose,2HHB,-,hemoglobin: deoxy (2HHB) vs oxy (1HHO),--ref {in}/1HHO.cif,ok,-,ligand HEM A:142,,"A,B,C,D",0,0,,22.0,21.9,22.1,0.1,21.5,3
+superpose,3PTB,-,trypsin: benzamidine-bound (3PTB) vs apo (2PTN),--ref {in}/2PTN.cif,ok,-,ligand BEN A:1,,A,0,0,,5.4,5.3,5.5,0.1,4.7,3

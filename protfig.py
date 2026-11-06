@@ -10,9 +10,9 @@ USAGE
 
 EXAMPLES
   protfig 8G66.cif --preset site --chains B,C,A
-  protfig 1BRS --preset interface_closeup --chains A,D --labels on
-  protfig my_protein.pdb --preset illustrative --palette pastel --bg transparent
-  protfig figures/site/8G66/8G66.pse --preset site_faded       (reuse view and selections)
+  protfig 1BRS --preset site --style outline --chains A,D
+  protfig my_protein.pdb --preset overview --style illustrative --palette pastel --bg transparent
+  protfig figures/site/8G66/8G66.pse --preset site --style faded   (reuse view and selections)
 
 OUTPUTS  (one folder per figure, grouped by style)
   figures/<preset>/<name>/<name>.png            final figure (300 dpi)
@@ -34,6 +34,7 @@ import os
 import shlex
 import sys
 import textwrap
+import time
 
 # PyMOL defines __script__ when running `pymol -cq protfig.py`; plain python defines __file__
 SCRIPT = os.path.abspath(globals().get("__script__") or globals().get("__file__") or sys.argv[0])
@@ -45,7 +46,8 @@ from pymol import cmd  # noqa: E402
 
 from protfig_lib import core  # noqa: E402
 from protfig_lib.core import ProtFigError  # noqa: E402
-from protfig_lib.presets import PRESETS, Ctx, set_sidechain_mode, show_glycans, show_het, show_metals  # noqa: E402
+from protfig_lib.presets import (PRESETS, Ctx, mutation_labels, set_sidechain_mode, show_glycans, show_het,
+                                 show_metals, show_mutation)  # noqa: E402
 
 KIND_NAMES = {"small": "ligand", "peptide": "peptide", "protein": "protein"}
 ONOFF = ("on", "off")
@@ -59,7 +61,7 @@ def build_parser():
     g = p.add_argument_group("basic")
     g.add_argument("input", nargs="?", help="structure: .pdb, .cif, PDB code or .pse")
     g.add_argument("prefix", nargs="?", help=argparse.SUPPRESS)  # compatibility: explicit output prefix
-    g.add_argument("-p", "--preset", default="overview", choices=sorted(PRESETS), metavar="STYLE",
+    g.add_argument("-p", "--preset", default="overview", choices=sorted(list(PRESETS) + list(ALIASES)), metavar="STYLE",
                    help="figure style (see --list). Default: overview")
     g.add_argument("--out", default="figures", help="root output folder (default: figures)")
     g.add_argument("--name", help="figure name (default: input file name)")
@@ -80,28 +82,40 @@ def build_parser():
     g.add_argument("--site_cutoff", type=float, default=4.0,
                    help="site/interface residues: within N Å of the partner (default 4)")
     g.add_argument("--pocket_cutoff", type=float,
-                   help="binding_surface: pocket residues within N Å of the partner (default 8)")
-    g.add_argument("--highlight", help="region to highlight (outline); \"interface\" shades both sides of a protein-protein/peptide interface")
-    g.add_argument("--key", help="key residues as sticks (outline, property)")
-    g.add_argument("--mutation", help="mutated residue, as translucent spheres (site_faded)")
+                   help="footprint: receptor residues within N Å of the partner (default 4.5)")
+    g.add_argument("--highlight", help="region to highlight (overview, site); \"interface\" shades both sides of a protein-protein/peptide interface")
+    g.add_argument("--key", help="key residues as sticks (overview, property)")
+    g.add_argument("--mutation", help="mutated residue(s), as sticks in translucent spheres with a label (any style)")
+    g.add_argument("--mutation_original", choices=ONOFF,
+                   help="with --mutation and --ref (the wild type): also the original residue, in translucent gray")
     g.add_argument("--covalent_cutoff", type=float,
                    help="covalent: max partner-receptor distance in Å for a bond missing from the file (default 2.0)")
+    g.add_argument("--style", choices=("faded", "outline", "comic", "illustrative", "pastel", "assembly"),
+                   help="site: faded (gray protein, colored sticks), outline (pastel with black outline); "
+                        "overview: outline, comic, illustrative, pastel, assembly")
+    g.add_argument("--scope", choices=("whole", "site"),
+                   help="covalent: whole protein (default); site = the close-up, now --preset site")
     g.add_argument("--interface_sticks", choices=ONOFF,
-                   help="covalent: other interface residues in sticks too (default off: cartoon)")
+                   help=argparse.SUPPRESS)  # former covalent --scope site option, accepted for old .toml files
     g.add_argument("--focus", help="selection to place at the top in the automatic view")
-    g.add_argument("--show_partner", choices=ONOFF, help="binding_surface: show the partner (default off)")
+    g.add_argument("--show_partner", choices=ONOFF, help="footprint: show the partner (default off)")
     g.add_argument("--partner_sticks", choices=ONOFF,
                    help="peptide/protein partner: side chains as sticks (default on); off = cartoon only")
-    g.add_argument("--ref", help="second structure (superpose; site_faded: its ligand as a ghost)")
+    g.add_argument("--ref", help="second structure: file or PDB code (superpose; site: its ligand as a ghost)")
+    g.add_argument("--ref_chains", help="superpose: chains of --ref to align and draw (default: all)")
     g.add_argument("--map", help="density map .ccp4/.map/.mrc (density)")
     g.add_argument("--map_level", type=float, default=1.0, help="mesh contour level in σ (default 1.0)")
     g.add_argument("--values", help="property: text file of 'chain resi value' lines (e.g. conservation)")
     g.add_argument("--lipids", help='membrane: lipid selection if not recognized, e.g. "resn POPX"')
     g.add_argument("--membrane_radius", type=float, help="membrane: bilayer radius around the protein in Å (default 40)")
     g.add_argument("--region", choices=("site", "all"), help="electrostatic/lipophilic: site or whole molecule")
-    g.add_argument("--repr", choices=("cartoon", "surface"), default="cartoon", help="illustrative: cartoon or surface")
+    g.add_argument("--repr", choices=("cartoon", "surface", "spheres"),
+                   help="overview --style illustrative: cartoon (default) or surface; membrane: cartoon (default), spheres or surface")
     g.add_argument("--glycans", choices=ONOFF, help="glycans (NAG, MAN...) as sticks (default off); cartoon and surface styles")
-    g.add_argument("--waters", action="store_true", help="keep crystallographic waters (pastel shows them)")
+    g.add_argument("--waters", action="store_true",
+                   help="keep waters (overview --style pastel: crystallographic waters as spheres; membrane: MD water as a translucent surface)")
+    g.add_argument("--water_color", help="membrane --waters: water surface color (default pale blue)")
+    g.add_argument("--water_layer", help="membrane --waters: water within N Å of the bilayer (default 10), or 'all' for the whole box")
     g.add_argument("--keep_het", action="store_true",
                    help="keep and show crystallization additives and ions (GOL, SO4, NA, CL...), removed by default")
     g.add_argument("--nonstandard_sticks", choices=ONOFF,
@@ -115,8 +129,8 @@ def build_parser():
     g.add_argument("--colors", help='colors for specific chains: "A:salmon;B:#88cc44;C:0.2 0.5 0.8"')
     g.add_argument("--partner_color", help="partner color (carbons / cartoon)")
     g.add_argument("--receptor_color", "--base_color", dest="receptor_color",
-                   help="receptor color (outline, site_faded, binding_surface, interface_closeup)")
-    g.add_argument("--site_color", help="site residue color (site_faded, binding_surface)")
+                   help="receptor color (overview --style outline, site --style faded, footprint)")
+    g.add_argument("--site_color", help="footprint color (footprint)")
     g.add_argument("--highlight_color", help="--highlight color (default orange)")
     g.add_argument("--partner_highlight_color", help="partner-side interface color with --highlight interface (default: darker partner color)")
     g.add_argument("--key_color", help="--key color (default yellow)")
@@ -149,10 +163,10 @@ def build_parser():
     g.add_argument("--label_halo", choices=ONOFF, default="on", help="background-colored halo around the text")
     g.add_argument("--chain_names", help='chain names (overview): "B:CRBN,C:CK1α,A:DDB1"')
     g.add_argument("--partner_name", "--ligand_name", dest="partner_name", help="ligand name (overview)")
-    g.add_argument("--distances", choices=ONOFF, help="site_faded: H-bond distances (default on)")
+    g.add_argument("--distances", choices=ONOFF, help="site: H-bond lengths in Å (default off)")
 
     g = p.add_argument_group("H-bonds")
-    g.add_argument("--hbonds", choices=ONOFF, default="on", help="draw H-bonds (default on)")
+    g.add_argument("--hbonds", choices=ONOFF, help="draw H-bonds (default on; off in overview --style comic)")
     g.add_argument("--no_hbonds", dest="hbonds", action="store_const", const="off", help=argparse.SUPPRESS)
     g.add_argument("--hbond_cutoff", type=float, default=3.5, help="maximum N/O distance in Å (default 3.5)")
     g.add_argument("--hbond_mode", choices=("geometric", "distance"), default="geometric",
@@ -175,8 +189,8 @@ def build_parser():
     g.add_argument("--clip", type=float, help="clip anything more than N Å in front of the partner")
 
     g = p.add_argument_group("image")
-    g.add_argument("--width", type=int, help="width in px (default: depends on the style)")
-    g.add_argument("--height", type=int, help="height in px (default: depends on the style)")
+    g.add_argument("--width", type=int, help="width in px (default: 180 mm at --dpi, i.e. 2126 px at 300 dpi)")
+    g.add_argument("--height", type=int, help="height in px (default: 3/4 of the width)")
     g.add_argument("--dpi", type=int, default=300)
     g.add_argument("--format", default="png",
                    help="figure format(s), comma-separated: " + ", ".join(IMAGE_FORMATS) +
@@ -194,13 +208,30 @@ def parse(argv):
         return a
     if not a.input:
         p.error("missing input structure (or use --config / --list)")
+    if a.preset == "covalent" and a.scope == "site":  # the close-up of a covalent link is now site
+        print("NOTE: 'covalent --scope site' is now '--preset site' (it detects covalent links)")
+        a.preset = "site"
+    if a.preset in ALIASES:  # former style -> its replacement, with the options that reproduce it
+        new, opts = ALIASES[a.preset]
+        print(f"NOTE: '{a.preset}' is now '" + " ".join([f"--preset {new}"] + [f"--{k} {v}" for k, v in opts.items()]) + "'")
+        a.preset = new
+        for k, v in opts.items():
+            if getattr(a, k, None) is None:
+                setattr(a, k, v)
+    styles = {"site": ("faded", "outline"), "overview": ("outline", "comic", "illustrative", "pastel", "assembly")}
+    if a.style and a.style not in styles.get(a.preset, ()):
+        ok = [p for p, st in styles.items() if a.style in st]
+        print(f"WARNING: --style {a.style} applies to {', '.join(ok)} only")
     a.formats = [f.strip().lower().lstrip(".") for f in a.format.split(",") if f.strip()]
     a.formats = ["jpg" if f == "jpeg" else "tiff" if f == "tif" else f for f in a.formats]
     if not a.formats or any(f not in IMAGE_FORMATS for f in a.formats):
         p.error(f"--format {a.format}: valid formats are {', '.join(IMAGE_FORMATS)}")
     meta = PRESETS[a.preset]
-    w, h = meta["size"]
-    a.width, a.height = a.width or w, a.height or h
+    # standard image: 180 mm wide (double column in Nature, Science, PNAS), 4:3, at --dpi
+    if not a.width and not a.height:
+        a.width = int(round(STANDARD_WIDTH_MM / 25.4 * a.dpi))
+    a.width = a.width or int(round(a.height * 4 / 3))
+    a.height = a.height or int(round(a.width * 3 / 4))
     if a.draft:
         a.width, a.height = int(a.width * 0.4), int(a.height * 0.4)
     if not a.prefix:
@@ -220,6 +251,15 @@ def list_presets():
     print("* requires a binding partner (automatic or --partner).")
 
 
+# former styles, now options of another one: name -> (style, option defaults)
+ALIASES = {"site_faded": ("site", {"style": "faded"}),
+           "interface_closeup": ("site", {"style": "outline", "palette": "candy", "labels": "off"}),
+           "binding_surface": ("footprint", {}),
+           "outline": ("overview", {"style": "outline"}),
+           "illustrative": ("overview", {"style": "illustrative"}),
+           "pastel": ("overview", {"style": "pastel"}),
+           "oligomer": ("overview", {"style": "assembly"})}
+STANDARD_WIDTH_MM = 180  # default image width; height 3/4 of it
 IMAGE_FORMATS = ("png", "tiff", "jpg", "pdf")
 LABEL_OBJECTS = ("LABELS", "CHAIN_LABELS", "DIST_LABELS")
 
@@ -294,7 +334,7 @@ def convert_formats(a):
             os.remove(png)
 
 
-def write_run(a, argv, chains, partner_txt):
+def write_run(a, argv, chains, partner_txt, times=None):
     """<name>_run.txt: where the figure came from and how to regenerate it."""
     files = sorted(os.path.basename(f) for f in glob.glob(f"{glob.escape(a.prefix)}*"))
     with open(f"{a.prefix}_run.txt", "w") as fh:
@@ -304,6 +344,8 @@ def write_run(a, argv, chains, partner_txt):
         fh.write(f"input:     {a.input}" + (f"  (session: {a.session})" if a.session else "") + "\n")
         fh.write(f"style:     {a.preset}\nchains:    {','.join(chains)}\npartner:   {partner_txt}\n")
         fh.write(f"image:     {a.width}x{a.height} px, {a.dpi} dpi" + (" (draft)" if a.draft else "") + "\n")
+        if times:  # wall clock inside PROTFIG; PyMOL start-up is not included
+            fh.write(f"time:      setup {times[0]:.1f} s (load, analysis, view), render {times[1]:.1f} s (ray tracing, files)\n")
         fh.write("files:\n" + "".join(f"  {f}\n" for f in files + [os.path.basename(a.prefix) + "_run.txt"]))
 
 
@@ -322,7 +364,7 @@ def apply_background(a):
 
 
 def is_closeup(preset):
-    return preset in ("site", "site_faded", "pocket", "density", "interface_closeup")
+    return preset in ("site", "pocket", "density")
 
 
 def run_one(argv):
@@ -335,6 +377,7 @@ def run_one(argv):
         return
     meta = PRESETS[a.preset]
     os.makedirs(os.path.dirname(os.path.abspath(a.prefix)), exist_ok=True)
+    t_start = time.perf_counter()
 
     cmd.reinitialize()
     session_view, user = core.load_input(a)
@@ -345,17 +388,21 @@ def run_one(argv):
     core.clean(a, user, keep_lipids=a.preset == "membrane")
     chains = core.chain_order(a, user)
     mode = meta["partner"]
-    if (a.highlight or "").strip().lower() == "interface" and mode == "optional":
-        mode = "required"  # --highlight interface: also look for a partner chain
+    if ((a.highlight or "").strip().lower() == "interface" or a.style == "comic") and mode == "optional":
+        mode = "required"  # --highlight interface, --style comic: also look for a partner chain
     lig, kind = core.find_partner(a, user, mode)
     if kind and meta["kinds"] and kind not in meta["kinds"]:
         print(f"WARNING: style '{a.preset}' is not designed for a {KIND_NAMES[kind]} partner; "
               f"works with: {', '.join(KIND_NAMES[k] for k in meta['kinds'])}.")
 
     core.ASPECT = a.width / a.height
+    core.IMAGE.update(height=a.height, dpi=a.dpi, scale=0.4 if a.draft else 1.0)  # draft: same look, smaller
     set_sidechain_mode(a.nonstandard_sticks == "on")
     ctx = Ctx(a, lig, kind, chains, user, session_view)
     view = meta["fn"](ctx)
+    if a.mutation:  # any style (site draws it itself, before framing)
+        show_mutation(ctx)
+        mutation_labels(ctx, view)
     if a.glycans == "on":
         if meta["glycans"]:
             show_glycans(ctx)
@@ -396,15 +443,18 @@ def run_one(argv):
     cmd.disable(core.BASE)
     cmd.deselect()
     cmd.save(f"{a.prefix}.pse")
+    t_setup = time.perf_counter()
     if not a.no_png:
         render(a, bg_rgb)
         convert_formats(a)
+    times = (t_setup - t_start, time.perf_counter() - t_setup)
     partner_txt = "-"
     if lig:
         r = core.residues(f"{core.BASE} and partner")
         partner_txt = (f"{KIND_NAMES[kind]} {r[0][2]} {r[0][0]}:{r[0][1]}" if len(r) == 1
                        else f"{KIND_NAMES[kind]}, {len(r)} residues (chain {r[0][0]})")
-    write_run(a, argv, chains, partner_txt)
+    chains = ctx.chains  # the preset may leave out chains (e.g. crystal copies away from the partner)
+    write_run(a, argv, chains, partner_txt, times)
     ext = {"tiff": "tif"}.get(a.formats[0], a.formats[0])
     print(f"[PROTFIG:{a.preset}] {a.prefix}.{ext}  chains {','.join(chains)}; partner: {partner_txt}")
 

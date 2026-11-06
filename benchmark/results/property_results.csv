@@ -1,0 +1,4 @@
+preset,id,type,description,options,status,partner_expected,partner_detected,partner_ok,chains_shown,n_hbonds,auto_errors,auto_error_notes,time_median_s,time_min_s,time_max_s,setup_s,render_s,runs
+property,2LZM,-,T4 lysozyme (B-factor),,ok,-,-,,A,0,0,,3.4,3.2,3.4,0.5,2.4,3
+property,1UBQ,-,ubiquitin (B-factor),,ok,-,-,,A,0,0,,2.6,2.6,2.8,0.5,1.7,3
+property,7RSA,-,ribonuclease A (B-factor),,ok,-,ligand TBU A:125,,A,0,0,,3.1,2.9,3.1,0.5,2.1,3

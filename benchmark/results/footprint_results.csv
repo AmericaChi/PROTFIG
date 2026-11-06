@@ -1,0 +1,4 @@
+preset,id,type,description,options,status,partner_expected,partner_detected,partner_ok,chains_shown,n_hbonds,auto_errors,auto_error_notes,time_median_s,time_min_s,time_max_s,setup_s,render_s,runs
+footprint,3SGB,protein,Streptomyces griseus protease B - turkey ovomucoid third domain,,ok,chain I,"protein, 56 residues (chain I)",yes,"E,I",0,0,,21.4,21.3,21.8,0.0,20.7,3
+footprint,1TGS,protein,trypsinogen - pancreatic secretory trypsin inhibitor,,ok,chain I,"protein, 56 residues (chain I)",yes,"I,Z",0,0,,28.7,28.7,28.9,0.1,28.2,3
+footprint,1HHK,peptide,HLA-A2 - peptide (two copies in the crystal),,ok,chain C,"peptide, 9 residues (chain C)",yes,"A,B,C,D,E,F",0,0,,47.6,47.5,47.8,0.1,46.9,3

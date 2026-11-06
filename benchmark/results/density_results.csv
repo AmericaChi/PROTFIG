@@ -1,0 +1,4 @@
+preset,id,type,description,options,status,partner_expected,partner_detected,partner_ok,chains_shown,n_hbonds,auto_errors,auto_error_notes,time_median_s,time_min_s,time_max_s,setup_s,render_s,runs
+density,6M0K,ligand,SARS-CoV-2 main protease - inhibitor 11b,--map {in}/6m0k.ccp4,ok,resn FJC,ligand FJC A:405,yes,A,9,0,,9.9,9.9,10.0,0.5,8.9,3
+density,1OYT,ligand,thrombin - inhibitor (hirudin peptide also bound),--map {in}/1oyt.ccp4,ok,resn FSN,ligand FSN H:501,yes,H,3,0,,9.0,9.0,9.1,0.3,8.2,3
+density,4COX,ligand,COX-2 - indomethacin (heme cofactor also bound),--map {in}/4cox.ccp4,ok,resn IMN,ligand HEM A:682,no,A,4,1,"partner: expected ligand resn IMN, got ligand HEM A:682",10.6,10.6,11.2,0.5,10.0,3

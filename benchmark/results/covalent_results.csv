@@ -1,0 +1,4 @@
+preset,id,type,description,options,status,partner_expected,partner_detected,partner_ok,chains_shown,n_hbonds,auto_errors,auto_error_notes,time_median_s,time_min_s,time_max_s,setup_s,render_s,runs
+covalent,6LU7,peptide,SARS-CoV-2 main protease - N3 (peptidomimetic covalent on Cys145),,ok,chain C,ligand 010 C:6,no,"A,C",0,1,"partner: expected peptide chain C, got ligand 010 C:6",1.3,1.1,1.5,0.1,0.7,3
+covalent,1C3W,ligand,bacteriorhodopsin - retinal on Lys216 (lipids in the crystal),,failed,resn RET,,,,0,1,run failed: ERROR: covalent: no partner atom within 2.0 Å of the receptor; raise --covalent_cutoff or check --partner,0.6,0.4,0.7,,,3
+covalent,5P9J,ligand,Bruton's tyrosine kinase - ibrutinib on Cys481,,ok,resn 8E8,ligand 8E8 A:701,yes,A,0,0,,1.4,1.3,1.5,0.1,0.9,3

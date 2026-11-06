@@ -1,0 +1,43 @@
+preset,id,type,expected_partner,options,description
+site,1AY7,protein,chain B,,ribonuclease Sa - barstar
+site,1FSS,protein,chain B,,acetylcholinesterase - fasciculin 2 (glycosylated)
+site,2SNI,protein,chain I,,subtilisin Novo - chymotrypsin inhibitor 2
+site,1T4F,peptide,chain P,,MDM2 - p53 peptide
+site,1EVH,peptide,chain B,,Mena EVH1 domain - proline-rich peptide (acetyl cap)
+site,1DDV,peptide,chain B,,Homer EVH1 domain - peptide
+site,1M17,ligand,resn AQ4,,EGFR kinase - erlotinib
+site,1EVE,ligand,resn E20,,acetylcholinesterase - donepezil (glycosylated)
+site,3EML,ligand,resn ZMA,,adenosine A2A receptor - ZM241385 (lipids in the crystal)
+pocket,1A4G,ligand,resn ZMR,,influenza neuraminidase - zanamivir (glycosylated)
+pocket,2RH1,ligand,resn CAU,,beta2-adrenergic receptor - carazolol (cholesterol and lipids in the crystal)
+pocket,1A1M,peptide,chain C,,HLA-B*53 - peptide
+footprint,3SGB,protein,chain I,,Streptomyces griseus protease B - turkey ovomucoid third domain
+footprint,1TGS,protein,chain I,,trypsinogen - pancreatic secretory trypsin inhibitor
+footprint,1HHK,peptide,chain C,,HLA-A2 - peptide (two copies in the crystal)
+density,6M0K,ligand,resn FJC,--map {in}/6m0k.ccp4,SARS-CoV-2 main protease - inhibitor 11b
+density,1OYT,ligand,resn FSN,--map {in}/1oyt.ccp4,thrombin - inhibitor (hirudin peptide also bound)
+density,4COX,ligand,resn IMN,--map {in}/4cox.ccp4,COX-2 - indomethacin (heme cofactor also bound)
+overview,1IGT,-,-,,intact IgG antibody (4 chains + glycans)
+overview,1BL8,-,-,,KcsA potassium channel tetramer
+overview,1AO6,-,-,,human serum albumin
+profile,1AVX,protein,chain B,,trypsin - soybean trypsin inhibitor
+profile,1CHO,protein,chain I,,chymotrypsin (3 chains) - turkey ovomucoid third domain
+profile,1ACB,protein,chain I,,chymotrypsin - eglin c
+superpose,4AKE,-,-,--ref {in}/1AKE.cif,adenylate kinase: open (4AKE) vs closed (1AKE)
+superpose,2HHB,-,-,--ref {in}/1HHO.cif,hemoglobin: deoxy (2HHB) vs oxy (1HHO)
+superpose,3PTB,-,-,--ref {in}/2PTN.cif,trypsin: benzamidine-bound (3PTB) vs apo (2PTN)
+covalent,6LU7,peptide,chain C,,SARS-CoV-2 main protease - N3 (peptidomimetic covalent on Cys145)
+covalent,1C3W,ligand,resn RET,,bacteriorhodopsin - retinal on Lys216 (lipids in the crystal)
+covalent,5P9J,ligand,resn 8E8,,Bruton's tyrosine kinase - ibrutinib on Cys481
+electrostatic,1HVR,ligand,resn XK2,,HIV-1 protease - cyclic urea inhibitor
+electrostatic,1FKF,ligand,resn FK5,,FKBP12 - FK506
+electrostatic,5C1M,ligand,resn VF1,,mu-opioid receptor - BU72 (nanobody and lipids)
+lipophilic,4DJH,ligand,resn JDC,,kappa-opioid receptor - JDTic
+lipophilic,2HYY,ligand,resn STI,,Abl kinase - imatinib (4 copies)
+lipophilic,2AM9,ligand,resn TES,,androgen receptor - testosterone
+property,2LZM,-,-,,T4 lysozyme (B-factor)
+property,1UBQ,-,-,,ubiquitin (B-factor)
+property,7RSA,-,-,,ribonuclease A (B-factor)
+plddt,AF-Q8I660,-,-,,AlphaFold DB model (CC BY 4.0): RING-type E3 ubiquitin ligase
+plddt,AF-Q8IDF4,-,-,,AlphaFold DB model (CC BY 4.0): uncharacterized protein
+plddt,AF-Q8IID0,-,-,,AlphaFold DB model (CC BY 4.0): RING zinc finger protein
