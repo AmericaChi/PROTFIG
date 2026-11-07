@@ -27,6 +27,8 @@ Add the `PROTFIG` folder to your `PATH` to call `protfig` from anywhere.
 protfig 8G66 --preset site --chains B,C,A                # ligand binding site (downloads 8G66)
 protfig 1BRS --preset site --chains A,D                  # protein-protein interface
 protfig my_protein.pdb --preset overview --style illustrative --bg transparent
+protfig 1BRS --preset site --chains A,D --palette chimerax --save_preset mySite   # save options
+protfig 2PTC --preset mySite                             # ...and reuse them
 protfig --list                                           # all presets
 protfig --help                                           # all options
 ```

@@ -175,6 +175,26 @@ protfig --config figures.toml --jobs 4      # 4 figures in parallel
 [`examples/figures.toml`](examples/figures.toml) has one example of every preset; run
 `examples/run_examples.sh` to download the inputs and render them all.
 
+### Saved presets
+
+To reuse a combination of options, add `--save_preset NAME` to a command. It saves every option
+except the structure and the output names (`--out`, `--name`, `--draft`, `--no_png`), and
+`--preset NAME` then works like any built-in preset. Options given on the command line win over
+the saved ones.
+
+```sh
+protfig 1BRS.cif --preset site --style outline --chains A,D --palette chimerax --save_preset mySite
+protfig 2PTC.cif --preset mySite                    # same options
+protfig 2PTC.cif --preset mySite --chains E,I       # same options, other chains
+protfig --preset site --palette candy --save_preset candySite   # save without making a figure
+```
+
+Saved presets are `.toml` files (same keys as above) in `~/.protfig/presets/`, or in the folder set
+by the `PROTFIG_PRESETS` environment variable; edit or delete them freely. They stay on your
+computer and are not changed when PROTFIG is updated. `protfig --list` shows them, figures go to
+`figures/NAME/`, and they also work in `--config` files. A saved preset can use another saved preset
+as its base.
+
 ## 6. Outputs
 
 ```

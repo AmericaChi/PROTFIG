@@ -5,6 +5,8 @@ USAGE
   protfig <structure> --preset <style> [options]           (or: pymol -cq protfig.py -- ...)
   protfig --list                                           available presets
   protfig --config figures.toml                            one or more figures from a file
+  protfig <structure> --preset site [options] --save_preset mySite    save options as a preset
+  protfig <structure> --preset mySite                      reuse them (options given here win)
 
   <structure>: .pdb / .cif file, a PDB code (downloaded) or a .pse session.
 
@@ -30,7 +32,9 @@ ADJUSTING BY HAND IN PYMOL
 import argparse
 import datetime
 import glob
+import json
 import os
+import re
 import shlex
 import sys
 import textwrap
@@ -62,7 +66,10 @@ def build_parser():
     g.add_argument("input", nargs="?", help="structure: .pdb, .cif, PDB code or .pse")
     g.add_argument("prefix", nargs="?", help=argparse.SUPPRESS)  # compatibility: explicit output prefix
     g.add_argument("-p", "--preset", default="overview", choices=sorted(list(PRESETS) + list(ALIASES)), metavar="STYLE",
-                   help="figure style (see --list). Default: overview")
+                   help="figure style (see --list), or a preset saved with --save_preset. Default: overview")
+    g.add_argument("--save_preset", metavar="NAME",
+                   help="save the options of this command (all but the structure and output names) as a "
+                        "preset NAME, used as --preset NAME (folder: $PROTFIG_PRESETS or ~/.protfig/presets)")
     g.add_argument("--out", default="figures", help="root output folder (default: figures)")
     g.add_argument("--name", help="figure name (default: input file name)")
     g.add_argument("--config", help=".toml file with one or more figures (see examples/figures.toml)")
@@ -203,8 +210,13 @@ def build_parser():
 
 def parse(argv):
     p = build_parser()
+    argv, user_preset = apply_user_preset(p, argv)
     a = p.parse_args(argv)
-    if a.list or a.config:
+    a.user_preset, a.saved_only = user_preset, False
+    if a.save_preset:
+        save_user_preset(a)
+        a.saved_only = not (a.input or a.list or a.config)  # only saving: no figure
+    if a.list or a.config or a.saved_only:
         return a
     if not a.input:
         p.error("missing input structure (or use --config / --list)")
@@ -236,8 +248,110 @@ def parse(argv):
         a.width, a.height = int(a.width * 0.4), int(a.height * 0.4)
     if not a.prefix:
         name = a.name or os.path.splitext(os.path.basename(a.input))[0]
-        a.prefix = os.path.join(a.out, a.preset, name, name)
+        a.prefix = os.path.join(a.out, a.user_preset or a.preset, name, name)
     return a
+
+
+# --- saved presets (--save_preset NAME, then --preset NAME): a preset plus fixed options, in a .toml
+USER_PRESETS = os.path.expanduser(os.environ.get("PROTFIG_PRESETS") or "~/.protfig/presets")
+NOT_SAVED = ("input", "prefix", "out", "name", "config", "jobs", "list", "save_preset", "draft", "no_png")
+
+
+def user_preset_path(name):
+    return os.path.join(USER_PRESETS, name + ".toml")
+
+
+def is_user_preset(name):
+    return name not in PRESETS and name not in ALIASES and os.path.isfile(user_preset_path(name))
+
+
+def read_user_preset(name, seen=()):
+    """Options of a saved preset {option: value}, checked as if given on the command line.
+    Its base preset may be another saved preset (options here win)."""
+    import tomllib
+
+    path = user_preset_path(name)
+    if name in seen:
+        raise ProtFigError(f"saved preset '{name}' uses itself as base ({path})")
+    try:
+        with open(path, "rb") as fh:
+            opts = tomllib.load(fh)
+    except tomllib.TOMLDecodeError as e:
+        raise ProtFigError(f"saved preset '{name}': {path} is not valid TOML ({e})")
+    base = str(opts.get("preset", "overview"))
+    if is_user_preset(base):
+        opts = {**read_user_preset(base, seen + (name,)), **{k: v for k, v in opts.items() if k != "preset"}}
+    bad = [k for k in opts if k in NOT_SAVED]
+    if bad:
+        raise ProtFigError(f"saved preset '{name}' ({path}): '{bad[0]}' cannot be part of a preset")
+    try:  # same checks as on the command line (option names, choices, numbers)
+        ns = build_parser().parse_args(["_"] + opts_to_argv(opts))
+    except SystemExit:
+        raise ProtFigError(f"saved preset '{name}': invalid option in {path} (see the message above); "
+                           "edit or delete the file")
+    return {k: getattr(ns, k) for k in opts}
+
+
+def apply_user_preset(p, argv):
+    """--preset NAME of a saved preset: its options become the defaults (so the command line wins)
+    and its base preset the --preset. Returns (argv without --preset NAME, NAME or None)."""
+    for i, x in enumerate(argv):
+        if x in ("-p", "--preset") and i + 1 < len(argv):
+            name, span = argv[i + 1], 2
+        elif x.startswith("--preset="):
+            name, span = x.split("=", 1)[1], 1
+        else:
+            continue
+        if not is_user_preset(name):
+            return argv, None  # a built-in preset, or an unknown name (argparse reports it)
+        p.set_defaults(**read_user_preset(name))
+        return argv[:i] + argv[i + span:], name
+    return argv, None
+
+
+def toml_value(v):
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if isinstance(v, (int, float)):
+        return repr(v)
+    if isinstance(v, (list, tuple)):
+        return "[" + ", ".join(toml_value(x) for x in v) + "]"
+    return json.dumps(str(v), ensure_ascii=False)  # a JSON string is a valid TOML basic string
+
+
+def save_user_preset(a):
+    """Writes the options that differ from the defaults (plus --preset) as <NAME>.toml."""
+    name = a.save_preset
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", name):
+        raise ProtFigError(f"--save_preset {name}: use only letters, digits, '_' and '-'")
+    if name in PRESETS or name in ALIASES:
+        raise ProtFigError(f"--save_preset {name}: '{name}' is a built-in preset; choose another name")
+    p = build_parser()
+    defaults = p.parse_args(["_"])
+    flags = {o[2:] for act in p._actions for o in act.option_strings if o.startswith("--")}
+    opts = {"preset": a.preset}
+    for k, v in vars(a).items():
+        if k in NOT_SAVED or k == "preset" or k not in flags or not hasattr(defaults, k):
+            continue
+        if v != getattr(defaults, k) and v is not None and v is not False and v != []:
+            opts[k] = list(v) if isinstance(v, tuple) else v
+    path = user_preset_path(name)
+    existed = os.path.exists(path)
+    os.makedirs(USER_PRESETS, exist_ok=True)
+    with open(path, "w") as fh:
+        fh.write(f"# PROTFIG saved preset '{name}' ({datetime.datetime.now():%Y-%m-%d %H:%M}).\n"
+                 f"# Use: protfig <structure> --preset {name} [options]   (options given there win)\n"
+                 "# Keys are the command-line options without '--'; edit or delete freely.\n")
+        fh.write("".join(f"{k} = {toml_value(v)}\n" for k, v in opts.items()))
+    print(f"{'Replaced' if existed else 'Saved'} preset '{name}': {path}\n    {cli_text(opts)}")
+
+
+def cli_text(opts):
+    return " ".join(shlex.quote(x) for x in opts_to_argv(opts))
+
+
+def user_presets():
+    return sorted(os.path.splitext(os.path.basename(f))[0] for f in glob.glob(os.path.join(USER_PRESETS, "*.toml")))
 
 
 def list_presets():
@@ -249,6 +363,17 @@ def list_presets():
         print(f"{name}{star}\n    works with: {kinds}")
         print(textwrap.fill(m["doc"], width=96, initial_indent="    ", subsequent_indent="    ") + "\n")
     print("* requires a binding partner (automatic or --partner).")
+    names = user_presets()
+    if names:
+        import tomllib
+        print(f"\nSaved presets ({USER_PRESETS}):")
+        for n in names:
+            try:
+                with open(user_preset_path(n), "rb") as fh:
+                    opts = tomllib.load(fh)
+                print(f"{n}\n    {cli_text(opts)}")
+            except (OSError, tomllib.TOMLDecodeError) as e:
+                print(f"{n}\n    (cannot read: {e})")
 
 
 # former styles, now options of another one: name -> (style, option defaults)
@@ -342,6 +467,8 @@ def write_run(a, argv, chains, partner_txt, times=None):
         fh.write(f"folder:    {os.getcwd()}\n")
         fh.write("command:   pymol -cq " + shlex.quote(SCRIPT) + " -- " + " ".join(shlex.quote(x) for x in argv) + "\n")
         fh.write(f"input:     {a.input}" + (f"  (session: {a.session})" if a.session else "") + "\n")
+        if a.user_preset:
+            fh.write(f"saved preset: {a.user_preset} ({user_preset_path(a.user_preset)})\n")
         fh.write(f"style:     {a.preset}\nchains:    {','.join(chains)}\npartner:   {partner_txt}\n")
         fh.write(f"image:     {a.width}x{a.height} px, {a.dpi} dpi" + (" (draft)" if a.draft else "") + "\n")
         if times:  # wall clock inside PROTFIG; PyMOL start-up is not included
@@ -369,6 +496,8 @@ def is_closeup(preset):
 
 def run_one(argv):
     a = parse(argv)
+    if a.saved_only:
+        return
     if a.list:
         list_presets()
         return
@@ -482,23 +611,28 @@ def config_argvs(path):
         opts = {**defaults, **fig}
         if "input" not in opts:
             raise ProtFigError(f"in {path}: a figure has no 'input'")
-        argv = [str(opts.pop("input"))]
-        for k, v in opts.items():
-            flag = "--" + k
-            if v is True:
-                argv.append(flag)
-            elif v is False or v is None:
-                continue
-            elif isinstance(v, list):
-                if k == "set":
-                    for item in v:
-                        argv += [flag, str(item)]
-                else:
-                    argv += [flag] + [str(x) for x in v]
-            else:
-                argv += [flag, str(v)]
-        out.append(argv)
+        out.append([str(opts.pop("input"))] + opts_to_argv(opts))
     return out
+
+
+def opts_to_argv(opts):
+    """{option: value} -> command-line arguments (true -> flag; lists -> values, or repeated --set)."""
+    argv = []
+    for k, v in opts.items():
+        flag = "--" + k
+        if v is True:
+            argv.append(flag)
+        elif v is False or v is None:
+            continue
+        elif isinstance(v, list):
+            if k == "set":
+                for item in v:
+                    argv += [flag, str(item)]
+            else:
+                argv += [flag] + [str(x) for x in v]
+        else:
+            argv += [flag, str(v)]
+    return argv
 
 
 def strip_opts(argv, names):
