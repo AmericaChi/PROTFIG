@@ -1,0 +1,119 @@
+PROTFIG benchmark: errors and possible improvements found, why, and the fix planned for the
+next version. The code is not changed until that version, so it stays consistent with results/.
+
+  ERRORS        the figure is wrong: no figure, wrong partner, or a misleading figure.
+  IMPROVEMENTS  the figure is right and readable, but could look better.
+
+One entry per case: what is seen, cause, workaround now, fix.
+
+==========================================================================================
+ERRORS (5 of 36 figures)
+==========================================================================================
+
+------------------------------------------------------------------------------------------
+covalent / 1C3W  (bacteriorhodopsin - retinal on Lys216)
+  Seen:       run failed, no figure ("no partner atom within 2.0 Å of the receptor").
+  Cause:      the crystal lipids LI1 (archaeal phytanyl lipid) and SQU (squalene) are not in
+              the lipid list, so the largest one, LI1, is taken as the ligand instead of the
+              retinal (RET); LI1 is not bonded to the protein.
+  Workaround: --partner "resn RET"
+  Fix:        core.py: add LI1, SQU (and other crystal lipids/detergents) to LIPIDS;
+              covalent: prefer the group bonded to the protein over a larger unbonded one.
+
+------------------------------------------------------------------------------------------
+covalent / 6LU7  (SARS-CoV-2 main protease - N3 inhibitor on Cys145)
+  Seen:       the inhibitor is split in two: one end in yellow (taken as the ligand) and the
+              rest in green (drawn as another protein chain).
+  Cause:      N3 is a short chain (chain C) of modified residues; the automatic search picks
+              one modified residue of it (010) as a small molecule, so the rest of chain C is
+              left as receptor. The "covalent link" found is inside N3 (010-PJE), not the real
+              one (PJE-Cys145).
+  Workaround: --partner "chain C"
+  Fix:        core.py find_partner: a modified residue inside a short chain is not a small
+              molecule; take the whole short chain as the peptide partner.
+
+------------------------------------------------------------------------------------------
+density / 4COX  (COX-2 - indomethacin, heme cofactor also bound)
+  Seen:       the figure shows the heme (HEM) and its density, not indomethacin (IMN).
+  Cause:      the automatic search takes the largest organic residue; one heme (43 atoms) is
+              larger than one indomethacin (25 atoms), and cofactors are not set apart.
+  Workaround: --partner "resn IMN"
+  Fix:        core.py find_partner: list of common cofactors (HEM, FAD, NAD, NAP, FMN, SAM,
+              PLP...) picked only when no other ligand is present.
+
+------------------------------------------------------------------------------------------
+profile / 1CHO  (chymotrypsin, 3 chains - turkey ovomucoid third domain)
+  Seen:       the partner is a 13-residue piece of chymotrypsin (chain E), not the inhibitor
+              (chain I); the inhibitor is drawn as part of the receptor.
+  Cause:      chymotrypsin is cut into three chains (E, F, G); with no small molecule, the
+              automatic search takes the shortest chain as a peptide partner, and chain E
+              (13 residues) is shorter than the inhibitor (56 residues).
+  Workaround: --partner "chain I"
+  Fix:        core.py find_partner: do not take as partner a chain covalently bonded
+              (disulfide) to, or tightly packed in, another chain of the same protein; or
+              prefer the chain with the smallest interface per residue.
+
+------------------------------------------------------------------------------------------
+footprint / 1HHK  (HLA-A2 - peptide, two copies in the crystal)
+  Seen:       two proteins: the footprint (pink) on one HLA-A2 complex and, below, a second
+              whole gray complex unrelated to it; the site looks small because the frame
+              covers both.
+  Cause:      the asymmetric unit has two complexes (A,B,C and D,E,F). The partner (peptide C)
+              is picked correctly, but footprint does not remove the crystal copy away from it
+              (chains drawn: A-F), as site does.
+  Workaround: --chains A,B,C
+  Fix:        apply trim_copies (as in site) in footprint, and check the other surface presets.
+
+==========================================================================================
+IMPROVEMENTS (7 of 36 figures)
+==========================================================================================
+
+------------------------------------------------------------------------------------------
+electrostatic / 1HVR  (HIV-1 protease - cyclic urea inhibitor XK2)
+  Seen:       ligand and site residues washed out, as behind a white veil; flat gray cut
+              faces of the surface; gray ligand carbons with little contrast on a near-white
+              surface.
+  Cause:      the ligand is fully buried (flaps G48-I50 above, catalytic D25 below, from both
+              chains); no view sees it uncovered, and the surface left in front after clipping
+              still covers it partly.
+  Workaround: show this site with site or pocket instead.
+  Fix:        to decide. Ideas: clip more for buried ligands, ligand in a contrasting color,
+              or show the surface only behind the ligand (as in pocket).
+
+------------------------------------------------------------------------------------------
+electrostatic / 5C1M  (mu-opioid receptor - BU72, nanobody bound)
+  Seen:       same problem as 1HVR, stronger: ligand and site residues washed out; large gray
+              cut faces (cut helices) cover half of the image; surface almost all white, so the
+              potential colors barely show.
+  Cause:      the ligand sits deep in the orthosteric pocket of the GPCR, closed above by the
+              extracellular loops; clipping the front surface cuts through whole helices.
+  Workaround: show this site with site or pocket instead.
+  Fix:        to decide, together with 1HVR (buried ligands in surface presets).
+
+------------------------------------------------------------------------------------------
+lipophilic / 4DJH, 2HYY, 2AM9  (kappa-opioid receptor - JDTic; Abl kinase - imatinib;
+                                 androgen receptor - testosterone)
+  Seen:       in all three, poor visibility of the ligand: washed out behind the surface.
+  Cause:      the ligands are buried (GPCR orthosteric pocket, kinase ATP site, nuclear-receptor
+              ligand pocket); the surface left in front after clipping still covers them.
+              Same problem as electrostatic 1HVR and 5C1M.
+  Workaround: show these sites with site or pocket instead.
+  Fix:        to decide, once for all surface presets with buried ligands (electrostatic,
+              lipophilic): see 1HVR.
+
+------------------------------------------------------------------------------------------
+density / 6M0K  (SARS-CoV-2 main protease - inhibitor 11b)
+  Seen:       framing could be better: one site residue (with its mesh) on the left touches the
+              image border, slightly cut, though still recognizable.
+  Cause:      the view is fitted to the ligand and site residues, but the mesh extends beyond
+              the atoms and a long side chain reaches the edge; the margin is too tight.
+  Workaround: zoom out in 6M0K.pse in PyMOL, save, and render again with --session 6M0K.pse.
+  Fix:        include the mesh (or the site atoms plus ~2 Å) in the box used to fit the view.
+
+------------------------------------------------------------------------------------------
+site / 3EML  (adenosine A2A receptor - ZM241385, lipids in the crystal)
+  Seen:       the orientation of the ligand can be improved (reviewer's note).
+  Cause:      not analyzed yet.
+  Workaround: rotate in 3EML.pse in PyMOL, save, and render again with --session 3EML.pse
+              (or --turn).
+  Fix:        to decide after analyzing the view.

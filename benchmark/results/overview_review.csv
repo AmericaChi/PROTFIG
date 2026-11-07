@@ -1,4 +1,4 @@
-id,type,visual_errors,visual_notes
-1IGT,-,,
-1BL8,-,,
-1AO6,-,,
+id,type,visual_errors,visual_improvements,visual_notes
+1IGT,-,0,0,
+1BL8,-,0,0,
+1AO6,-,0,0,

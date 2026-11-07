@@ -1,4 +1,4 @@
-id,type,visual_errors,visual_notes
-1AVX,protein,,
-1CHO,protein,,
-1ACB,protein,,
+id,type,visual_errors,visual_improvements,visual_notes
+1AVX,protein,0,0,
+1CHO,protein,0,0,
+1ACB,protein,0,0,

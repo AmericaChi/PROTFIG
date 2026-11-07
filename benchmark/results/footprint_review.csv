@@ -1,4 +1,4 @@
-id,type,visual_errors,visual_notes
-3SGB,protein,,
-1TGS,protein,,
-1HHK,peptide,,
+id,type,visual_errors,visual_improvements,visual_notes
+3SGB,protein,0,0,
+1TGS,protein,0,0,
+1HHK,peptide,1,0,do not remove secon receptor copy

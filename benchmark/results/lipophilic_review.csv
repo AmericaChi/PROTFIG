@@ -1,4 +1,4 @@
-id,type,visual_errors,visual_notes
-4DJH,ligand,,
-2HYY,ligand,,
-2AM9,ligand,,
+id,type,visual_errors,visual_improvements,visual_notes
+4DJH,ligand,0,1,ligand visibility is poor due to ligand buried into protein
+2HYY,ligand,0,1,ligand visibility is poor due to ligand buried into protein
+2AM9,ligand,0,1,ligand visibility is poor due to ligand buried into protein

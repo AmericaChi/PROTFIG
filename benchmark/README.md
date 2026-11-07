@@ -11,8 +11,8 @@ python3 run_benchmark.py --preset density   # one preset
 
 ## Cases
 
-[`cases.csv`](cases.csv): one row per figure, at least 3 per preset (9 for `site`: 3 protein–protein,
-3 protein–peptide, 3 protein–ligand).
+[`cases.csv`](cases.csv): one row per figure, 3 per preset (for `site`, one per partner type:
+protein, peptide, ligand, the hardest of each).
 
 | Column | Meaning |
 |---|---|
@@ -23,9 +23,9 @@ python3 run_benchmark.py --preset density   # one preset
 | `options` | extra options; `{in}` is the inputs folder (maps and second structures are downloaded too) |
 
 Cases include harder situations on purpose: cofactors next to the ligand (4COX), lipids or
-cholesterol in the crystal (2RH1, 3EML, 1C3W, 5C1M), glycans (1A4G, 1EVE, 1FSS, 1IGT), several
-copies in the crystal (1HHK, 2HYY), an enzyme split in several chains (1CHO), a peptidomimetic
-covalent inhibitor (6LU7).
+cholesterol in the crystal (2RH1, 3EML, 1C3W, 5C1M), glycans (1A4G, 1FSS, 1IGT), a peptide with an
+acetyl cap (1EVH), several copies in the crystal (1HHK, 2HYY), an enzyme split in several chains
+(1CHO), a peptidomimetic covalent inhibitor (6LU7).
 
 Inputs are downloaded into `inputs/` (not timed, not in git): structures from the RCSB PDB, 2Fo-Fc
 maps from PDBe. The AlphaFold models for `plddt` are in [`data/`](data) (AlphaFold Protein Structure
@@ -35,21 +35,28 @@ scripted downloads. Figures go to `figures/` (not in git).
 `membrane` is not benchmarked yet: it needs simulated bilayers (MemProtMD), whose server was not
 reachable when the benchmark was run.
 
-## Errors
+## Errors and improvements
 
 - **Automatic** (`results/<preset>_results.csv`): the run failed; the detected partner is not the
   expected one (type and chain / residue name); blank image. The number of H-bonds is reported
-  (`n_hbonds`) but zero is not an error: some ligands bind without direct H-bonds (e.g. donepezil
-  in 1EVE, by aromatic stacking and through waters).
-- **Visual** (`results/<preset>_review.csv`): checked by a person looking at each figure (overlapping
-  labels, hidden partner, misleading colors...). Fill in `visual_errors` (number of errors, `0` if
-  none; blank = not reviewed yet; a description typed here counts as 1 error and is moved to
-  `visual_notes`) and `visual_notes`, then update the summary without rendering again:
-  `python3 run_benchmark.py --summary_only`. A full run keeps the reviews.
+  (`n_hbonds`) but zero is not an error: some ligands bind without direct H-bonds (by aromatic
+  stacking or through waters).
+- **Visual** (`results/<preset>_review.csv`): checked by a person looking at each figure. Two
+  columns, a number each (`0` if none; blank = not reviewed yet; a description typed here counts
+  as 1 and is moved to `visual_notes`):
+  - `visual_errors`: the figure is wrong or misleading (e.g. a crystal copy drawn as if it were part
+    of the complex).
+  - `visual_improvements`: the figure is right and readable but could look better (framing,
+    orientation, a buried ligand hard to see).
 
-[`results/summary.csv`](results/summary.csv) gives, per preset and in total, the figures with errors,
-the error rate and the time per figure. `figures_reviewed` counts the figures already checked by
-eye; until then `figures_visual_errors` reads `pending` and the error rate covers automatic errors only.
+  Then update the summary without rendering again: `python3 run_benchmark.py --summary_only`. A
+  full run keeps the reviews.
+
+[`results/summary.csv`](results/summary.csv) gives, per preset and in total, the figures with errors
+(automatic or visual; a figure counts once) and the error rate, the figures without errors that could
+be improved, the figures with no remark (`figures_ok`), and the time per figure. Until the review is
+done these columns read `pending`. [`benchmark_errors.txt`](benchmark_errors.txt) describes every
+error and improvement: what is seen, the cause, a workaround and the fix planned.
 
 ## Times
 

@@ -1,10 +1,4 @@
 preset,id,type,description,options,status,partner_expected,partner_detected,partner_ok,chains_shown,n_hbonds,auto_errors,auto_error_notes,time_median_s,time_min_s,time_max_s,setup_s,render_s,runs
-site,1AY7,protein,ribonuclease Sa - barstar,,ok,chain B,"protein, 89 residues (chain B)",yes,"A,B",10,0,,3.2,3.0,3.3,0.1,2.6,3
 site,1FSS,protein,acetylcholinesterase - fasciculin 2 (glycosylated),,ok,chain B,"protein, 61 residues (chain B)",yes,"A,B",11,0,,5.3,5.3,5.4,0.7,4.1,3
-site,2SNI,protein,subtilisin Novo - chymotrypsin inhibitor 2,,ok,chain I,"protein, 83 residues (chain I)",yes,"E,I",11,0,,4.3,4.2,4.3,0.3,3.6,3
-site,1T4F,peptide,MDM2 - p53 peptide,,ok,chain P,"peptide, 9 residues (chain P)",yes,"M,P",3,0,,3.2,3.2,3.3,0.1,2.6,3
 site,1EVH,peptide,Mena EVH1 domain - proline-rich peptide (acetyl cap),,ok,chain B,"peptide, 6 residues (chain B)",yes,"A,B",2,0,,2.6,2.4,2.8,0.1,2.1,3
-site,1DDV,peptide,Homer EVH1 domain - peptide,,ok,chain B,"peptide, 6 residues (chain B)",yes,"A,B",1,0,,2.7,2.7,2.7,0.1,2.1,3
-site,1M17,ligand,EGFR kinase - erlotinib,,ok,resn AQ4,ligand AQ4 A:999,yes,A,2,0,,6.3,6.1,6.7,0.2,5.6,3
-site,1EVE,ligand,acetylcholinesterase - donepezil (glycosylated),,ok,resn E20,ligand E20 A:2001,yes,A,0,0,,6.0,5.8,6.5,0.2,5.2,3
 site,3EML,ligand,adenosine A2A receptor - ZM241385 (lipids in the crystal),,ok,resn ZMA,ligand ZMA A:401,yes,A,2,0,,7.0,6.9,7.0,0.2,6.2,3

@@ -1,4 +1,4 @@
-id,type,visual_errors,visual_notes
-1A4G,ligand,,
-2RH1,ligand,,
-1A1M,peptide,,
+id,type,visual_errors,visual_improvements,visual_notes
+1A4G,ligand,0,0,
+2RH1,ligand,0,0,
+1A1M,peptide,0,0,

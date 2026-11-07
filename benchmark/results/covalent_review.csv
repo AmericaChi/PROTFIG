@@ -1,4 +1,4 @@
-id,type,visual_errors,visual_notes
-6LU7,peptide,,
-1C3W,ligand,,
-5P9J,ligand,,
+id,type,visual_errors,visual_improvements,visual_notes
+6LU7,peptide,1,0,broken partner
+1C3W,ligand,1,0,Missing files
+5P9J,ligand,0,0,

@@ -10,7 +10,7 @@ inputs folder). Structures and maps are downloaded first (not timed); then each 
 
   results/<preset>_results.csv   one row per figure: automatic checks and times
   results/<preset>_review.csv    visual review, filled in by hand (kept between runs)
-  results/summary.csv            errors and times per preset and in total
+  results/summary.csv            errors, possible improvements and times per preset and in total
   results/environment.txt        machine, OS, PyMOL, Python and PROTFIG version
 
 Times: wall clock of the whole command (PyMOL start-up, analysis, ray tracing), one process at a
@@ -161,45 +161,58 @@ def run_case(c, repeats, warmup):
     }
 
 
-def visual_count(entry):
-    """visual_errors: a number (0 = reviewed, no error); free text = 1 error (the text is a note);
-    blank = not reviewed yet (None)."""
-    v = (entry.get("visual_errors") or "").strip()
+def visual_count(entry, column="visual_errors"):
+    """visual_errors / visual_improvements: a number (0 = reviewed, none); free text = 1 (the text
+    is a note); blank = not reviewed yet (None)."""
+    v = (entry.get(column) or "").strip()
     return None if not v else (int(v) if v.isdigit() else 1)
 
 
 def write_review(rows, preset):
     """<preset>_review.csv, one row per figure, kept between runs. A description typed in
-    visual_errors is moved to visual_notes and counted as 1 error."""
+    visual_errors or visual_improvements is moved to visual_notes and counted as 1."""
     path = os.path.join(RESULTS, f"{preset}_review.csv")
     old = {r["id"]: r for r in csv.DictReader(open(path, newline=""))} if os.path.exists(path) else {}
     review = {}
     for r in rows:
         e = old.get(r["id"], {})
-        n, notes = (e.get("visual_errors") or "").strip(), (e.get("visual_notes") or "").strip()
-        if n and not n.isdigit():
-            n, notes = "1", "; ".join(x for x in (n, notes) if x)
-        review[r["id"]] = {"id": r["id"], "type": r["type"], "visual_errors": n, "visual_notes": notes}
+        notes = (e.get("visual_notes") or "").strip()
+        entry = {"id": r["id"], "type": r["type"]}
+        for col in ("visual_errors", "visual_improvements"):
+            n = (e.get(col) or "").strip()
+            if n and not n.isdigit():
+                n, notes = "1", "; ".join(x for x in (n, notes) if x)
+            entry[col] = n
+        entry["visual_notes"] = notes
+        review[r["id"]] = entry
     with open(path, "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=["id", "type", "visual_errors", "visual_notes"])
+        w = csv.DictWriter(fh, fieldnames=["id", "type", "visual_errors", "visual_improvements", "visual_notes"])
         w.writeheader()
         w.writerows(review.values())
     return review
 
 
 def summary_row(group, rows, review):
+    """Errors: the figure is wrong (run failed, wrong partner, misleading figure). Improvements: the
+    figure is right and readable but could look better. A figure counts once in each column."""
     visual = [visual_count(review[r["id"]]) for r in rows]
+    better = [visual_count(review[r["id"]], "visual_improvements") for r in rows]
     reviewed = sum(v is not None for v in visual)
-    with_errors = [r for r, v in zip(rows, visual) if int(r["auto_errors"]) > 0 or (v or 0) > 0]
+    errors = [int(r["auto_errors"]) > 0 or (v or 0) > 0 for r, v in zip(rows, visual)]
+    improve = [not e and (b or 0) > 0 for e, b in zip(errors, better)]
     t = [float(r["time_median_s"]) for r in rows if r["status"] == "ok"]
+    pct = lambda k: f"{100 * k / len(rows):.0f}"
     return {
         "group": group, "figures": len(rows),
         "failed_runs": sum(r["status"] == "failed" for r in rows),
         "figures_auto_errors": sum(int(r["auto_errors"]) > 0 for r in rows),
         "figures_reviewed": reviewed,
         "figures_visual_errors": sum((v or 0) > 0 for v in visual) if reviewed else "pending",
-        "figures_with_errors": len(with_errors),
-        "error_rate_pct": f"{100 * len(with_errors) / len(rows):.0f}",
+        "figures_with_errors": sum(errors),
+        "error_rate_pct": pct(sum(errors)),
+        "figures_to_improve": sum(improve) if reviewed else "pending",
+        "improve_rate_pct": pct(sum(improve)) if reviewed else "pending",
+        "figures_ok": len(rows) - sum(errors) - sum(improve) if reviewed else "pending",
         "time_median_s": f"{statistics.median(t):.1f}" if t else "",
         "time_range_s": f"{min(t):.1f}-{max(t):.1f}" if t else "",
     }

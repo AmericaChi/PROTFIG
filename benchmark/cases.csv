@@ -1,12 +1,6 @@
 preset,id,type,expected_partner,options,description
-site,1AY7,protein,chain B,,ribonuclease Sa - barstar
 site,1FSS,protein,chain B,,acetylcholinesterase - fasciculin 2 (glycosylated)
-site,2SNI,protein,chain I,,subtilisin Novo - chymotrypsin inhibitor 2
-site,1T4F,peptide,chain P,,MDM2 - p53 peptide
 site,1EVH,peptide,chain B,,Mena EVH1 domain - proline-rich peptide (acetyl cap)
-site,1DDV,peptide,chain B,,Homer EVH1 domain - peptide
-site,1M17,ligand,resn AQ4,,EGFR kinase - erlotinib
-site,1EVE,ligand,resn E20,,acetylcholinesterase - donepezil (glycosylated)
 site,3EML,ligand,resn ZMA,,adenosine A2A receptor - ZM241385 (lipids in the crystal)
 pocket,1A4G,ligand,resn ZMR,,influenza neuraminidase - zanamivir (glycosylated)
 pocket,2RH1,ligand,resn CAU,,beta2-adrenergic receptor - carazolol (cholesterol and lipids in the crystal)

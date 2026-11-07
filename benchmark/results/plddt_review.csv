@@ -1,4 +1,4 @@
-id,type,visual_errors,visual_notes
-AF-Q8I660,-,,
-AF-Q8IDF4,-,,
-AF-Q8IID0,-,,
+id,type,visual_errors,visual_improvements,visual_notes
+AF-Q8I660,-,0,0,
+AF-Q8IDF4,-,0,0,
+AF-Q8IID0,-,0,0,
