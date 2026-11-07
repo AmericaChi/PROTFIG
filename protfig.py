@@ -230,9 +230,8 @@ def parse(argv):
         for k, v in opts.items():
             if getattr(a, k, None) is None:
                 setattr(a, k, v)
-    styles = {"site": ("faded", "outline"), "overview": ("outline", "comic", "illustrative", "pastel", "assembly")}
-    if a.style and a.style not in styles.get(a.preset, ()):
-        ok = [p for p, st in styles.items() if a.style in st]
+    if a.style and a.style not in STYLES.get(a.preset, ()):
+        ok = [p for p, st in STYLES.items() if a.style in st]
         print(f"WARNING: --style {a.style} applies to {', '.join(ok)} only")
     a.formats = [f.strip().lower().lstrip(".") for f in a.format.split(",") if f.strip()]
     a.formats = ["jpg" if f == "jpeg" else "tiff" if f == "tif" else f for f in a.formats]
@@ -384,6 +383,8 @@ ALIASES = {"site_faded": ("site", {"style": "faded"}),
            "illustrative": ("overview", {"style": "illustrative"}),
            "pastel": ("overview", {"style": "pastel"}),
            "oligomer": ("overview", {"style": "assembly"})}
+# --style values accepted by each preset (the others have a single look)
+STYLES = {"site": ("faded", "outline"), "overview": ("outline", "comic", "illustrative", "pastel", "assembly")}
 STANDARD_WIDTH_MM = 180  # default image width; height 3/4 of it
 IMAGE_FORMATS = ("png", "tiff", "jpg", "pdf")
 LABEL_OBJECTS = ("LABELS", "CHAIN_LABELS", "DIST_LABELS")

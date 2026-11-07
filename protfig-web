@@ -1,0 +1,5 @@
+#!/bin/sh
+# protfig-web — PROTFIG web interface (see protfig_web/app.py). Usage: protfig-web [--port N] [--workdir DIR] [--host H]
+DIR="$(cd "$(dirname "$0")" && pwd)"
+PYTHON="${PYTHON:-python3}"
+exec "$PYTHON" "$DIR/protfig_web/app.py" "$@"
