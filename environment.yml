@@ -8,3 +8,4 @@ dependencies:
   - numpy
   - pillow
   - matplotlib
+  - flask             # web interface (protfig-web)

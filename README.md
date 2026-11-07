@@ -38,6 +38,39 @@ default; TIFF, JPG and PDF also available), the PyMOL session for fine-tuning by
 as editable SVG, and text files listing the site residues and hydrogen bonds. Add `--draft` for a
 quick preview.
 
+## Web interface
+
+`protfig-web` opens PROTFIG in the browser. Pick a structure (upload it, browse the server's files or
+type a PDB code), click a preset and a style, set any option, then click **Draft preview** or **Render
+figure**. The page shows the equivalent `protfig` command, the log while the figure renders, the image
+and its files (download each one or all as a .zip). Draft previews are temporary: each one replaces the
+previous one, and **Render this at full quality** turns the one you like into a figure. Rendered
+figures are kept in the history with their settings, so **Reuse** fills the form again.
+
+```sh
+conda activate protfig
+./protfig-web                          # prints http://localhost:8050/?token=...  — open that link
+./protfig-web --port 9000 --workdir ~/protfig_runs --max_jobs 4
+```
+
+The link includes a random access token, because other users of a shared machine can reach its
+ports. Uploads and figures go to `--workdir` (default `./protfig_web_runs/jobs/<id>/`), and relative
+paths are read from the folder where `protfig-web` was started.
+
+**On a cluster (HPC)**, start the server there and open an SSH tunnel from your computer:
+
+```sh
+# on the login node
+./protfig-web --port 8050
+# on your computer, then open the printed link
+ssh -N -L 8050:localhost:8050 user@login-node
+
+# on a compute node (e.g. inside an interactive SLURM job): listen on all interfaces
+./protfig-web --host 0.0.0.0 --port 8050
+# on your computer, tunnel through the login node to that node
+ssh -N -L 8050:<compute-node>:8050 user@login-node
+```
+
 ## Presets
 
 13 presets with 19 styles, in three groups. Choose a preset with `--preset` and a style with

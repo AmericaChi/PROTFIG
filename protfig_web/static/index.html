@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTFIG</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">PROTFIG <span class="muted">publication-ready molecular figures</span></div>
+  <div class="muted small" id="hostinfo"></div>
+</header>
+
+<main class="layout">
+  <!-- left: what to draw -->
+  <section class="panel form-panel">
+    <div class="step">
+      <h2><span class="num">1</span> Structure</h2>
+      <div class="field-row file-row">
+        <input id="input" type="text" placeholder="PDB code (e.g. 1BRS) or a file path on the server" spellcheck="false">
+        <button class="btn" data-upload="input" type="button">Upload</button>
+        <button class="btn" data-browse="input" type="button">Browse</button>
+      </div>
+      <p class="hint">.pdb, .cif or a PyMOL session .pse (re-render a figure you adjusted by hand). PDB codes are downloaded.</p>
+    </div>
+
+    <div class="step">
+      <h2><span class="num">2</span> Preset</h2>
+      <div id="presets" class="preset-grid"></div>
+      <div id="saved-presets" class="saved"></div>
+      <div id="styles" class="styles"></div>
+      <p id="preset-doc" class="doc"></p>
+    </div>
+
+    <div class="step">
+      <h2><span class="num">3</span> Options <span class="muted small" id="changed-count"></span></h2>
+      <div class="field-row">
+        <input id="opt-search" type="search" placeholder="Filter options (e.g. color, label, chain)">
+        <button class="btn" id="reset-opts" type="button">Reset</button>
+      </div>
+      <div id="options"></div>
+    </div>
+  </section>
+
+  <!-- right: run and results -->
+  <section class="panel run-panel">
+    <div class="command">
+      <div class="command-head"><span class="small muted">Equivalent command</span>
+        <button class="link" id="copy-cmd" type="button">Copy</button></div>
+      <code id="command">protfig …</code>
+    </div>
+    <div class="actions">
+      <button class="btn" id="run-draft" type="button">Draft preview</button>
+      <button class="btn primary" id="run-full" type="button">Render figure</button>
+    </div>
+    <p class="error" id="form-error" hidden></p>
+
+    <div id="current" class="current" hidden>
+      <div class="current-head">
+        <span id="cur-status" class="pill"></span>
+        <span id="cur-time" class="small muted"></span>
+        <span class="spacer"></span>
+        <button class="btn small" id="cur-cancel" type="button" hidden>Cancel</button>
+        <a class="btn small" id="cur-zip" hidden>Download all (.zip)</a>
+        <button class="btn small primary" id="cur-full" type="button" hidden
+                title="Render the settings of this preview at full quality and save it">Render this at full quality</button>
+      </div>
+      <p id="cur-note" class="hint"></p>
+      <div id="cur-image" class="figure"></div>
+      <ul id="cur-files" class="files"></ul>
+      <details id="cur-log-box" class="log-box"><summary>Log</summary><pre id="cur-log"></pre></details>
+    </div>
+
+    <h3>History</h3>
+    <ul id="history" class="history"></ul>
+  </section>
+</main>
+
+<dialog id="browser">
+  <form method="dialog" class="browser">
+    <div class="browser-head">
+      <input id="br-path" type="text" spellcheck="false">
+      <button class="btn" id="br-go" type="button">Go</button>
+      <button class="btn" value="cancel">Close</button>
+    </div>
+    <ul id="br-list" class="br-list"></ul>
+    <p class="hint">Showing folders and structure, map, session and text files.</p>
+  </form>
+</dialog>
+<input type="file" id="file-picker" hidden>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

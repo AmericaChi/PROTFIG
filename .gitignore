@@ -14,3 +14,6 @@ __pycache__/
 # benchmark: downloaded inputs and generated figures (results/ is kept)
 benchmark/inputs/
 benchmark/figures/
+
+# web interface: uploads and job outputs
+protfig_web_runs/
